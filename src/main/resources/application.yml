@@ -1,0 +1,84 @@
+server:
+  port: 8080
+  address: 0.0.0.0 # 모든 네트워크 인터페이스에서 접속 허용
+  servlet:
+    context-path: /api
+    session:
+      cookie:
+        same-site: lax
+        path: / # 중요: 쿠키가 /api 경로에서도 읽힐 수 있도록 설정
+        http-only: true
+        secure: false
+
+logging:
+  level:
+    org.springframework.web: DEBUG
+    org.springframework.security: TRACE
+    org.hibernate.SQL: DEBUG
+    org.springframework.security.oauth2: TRACE
+    org.springframework.web.client.RestTemplate: DEBUG
+
+spring:
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 20MB
+  profiles:
+    include: secrets
+
+  config:
+    import: "optional:classpath:application-secrets.yml"
+  #  mvc:
+  #    servlet:
+  #      path: /api
+  datasource:
+    url: jdbc:oracle:thin:@//100.91.129.24:1521/XEPDB1
+    username: SCOTT
+    password: tiger
+    driver-class-name: oracle.jdbc.OracleDriver
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        default_batch_fetch_size: 100
+  main:
+    allow-bean-definition-overriding: true
+  autoconfigure:
+    exclude:
+      org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
+      org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+      org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: rlrdus@gmail.com
+    password: jebbqjzfdbcjtwin # 일반 비번이 아닙니다!
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html # Swagger 접속 경로 변경 (기본값: /swagger-ui.html)
+    groups-order: DESC
+    operations-sorter: alpha
+    tags-sorter: alpha
+    #config-url: /api/v3/api-docs/swagger-config
+    url: /v3/api-docs
+    disable-swagger-default-url: true
+  api-docs:
+    path: /v3/api-docs # JSON 명세서 경로 변경
+
+app:
+  upload:
+    dir: uploads
