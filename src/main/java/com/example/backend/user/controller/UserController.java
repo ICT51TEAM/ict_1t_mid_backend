@@ -60,7 +60,6 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/users")
 @RequiredArgsConstructor
-@SessionAttributes(types = UserProfileDto.class)
 public class UserController implements UserControllerDocs {
 
     private final BCryptPasswordEncoder passwordEncoder;

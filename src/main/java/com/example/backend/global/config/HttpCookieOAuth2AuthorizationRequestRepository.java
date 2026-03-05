@@ -71,16 +71,11 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
     private void deleteCookie(HttpServletRequest request,
                                HttpServletResponse response,
                                String name) {
-        Cookie[] cookies = request.getCookies();
-        if (cookies != null) {
-            for (Cookie cookie : cookies) {
-                if (cookie.getName().equals(name)) {
-                    cookie.setValue("");
-                    cookie.setPath("/");
-                    cookie.setMaxAge(0);
-                    response.addCookie(cookie);
-                }
-            }
-        }
+        // 기존 쿠키 여부와 관계없이 확실하게 삭제 쿠키를 전송
+        Cookie deletionCookie = new Cookie(name, "");
+        deletionCookie.setPath("/");
+        deletionCookie.setMaxAge(0);
+        deletionCookie.setHttpOnly(true);
+        response.addCookie(deletionCookie);
     }
 }
