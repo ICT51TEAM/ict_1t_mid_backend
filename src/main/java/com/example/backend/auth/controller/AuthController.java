@@ -309,5 +309,12 @@ public class AuthController implements AuthControllerDocs {
 		authService.resetPassword(request.getEmail(), request.getNewPassword());
 		return ResponseEntity.ok("비밀번호가 변경되었습니다.");
 	}
+	
+	// 이메일 중복여부 체크
+	@GetMapping("/email/check")
+	public ResponseEntity<Map<String, Boolean>> checkEmail(@RequestParam String email) {
+	    boolean isDuplicate = userRepository.existsByEmail(email);
+	    return ResponseEntity.ok(Map.of("isDuplicate", isDuplicate));
+	}
 
 }

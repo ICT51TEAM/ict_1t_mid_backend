@@ -2,6 +2,8 @@ package com.example.backend.auth.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+
 import jakarta.servlet.http.HttpSession;
 import java.util.Map;
 
@@ -45,4 +47,7 @@ public interface AuthControllerDocs {
 
     @Operation(summary = "비밀번호 재설정", description = "새로운 비밀번호로 변경합니다.")
     ResponseEntity<?> resetPassword(@RequestBody ResetPasswordDto request);
+    
+    @Operation(summary = "이메일 중복 여부 체크", description = "회원 가입전 인증 메일 발송시 기존 회원 메일 등록여부를 체크합니다")
+    ResponseEntity<Map<String, Boolean>> checkEmail(@RequestParam String email);
 }
