@@ -16,12 +16,6 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
     private static final String COOKIE_NAME = "oauth2_auth_request";
     private static final int COOKIE_EXPIRE_SECONDS = 180;
 
-    @Override
-    public OAuth2AuthorizationRequest loadAuthorizationRequest(HttpServletRequest request) {
-        return getCookieValue(request, COOKIE_NAME)
-                .map(this::deserialize)
-                .orElse(null);
-    }
 
     @Override
     public void saveAuthorizationRequest(OAuth2AuthorizationRequest authorizationRequest,
@@ -33,29 +27,25 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
         }
         Cookie cookie = new Cookie(COOKIE_NAME, serialize(authorizationRequest));
         cookie.setPath("/");
-        cookie.setHttpOnly(true);
+        cookie.setHttpOnly(true); // 자바스크립트의 스틸 방지
         cookie.setMaxAge(COOKIE_EXPIRE_SECONDS);
         response.addCookie(cookie);
     }
-
-    @Override
-    public OAuth2AuthorizationRequest removeAuthorizationRequest(HttpServletRequest request,
-                                                                  HttpServletResponse response) {
-        OAuth2AuthorizationRequest req = loadAuthorizationRequest(request);
-        deleteCookie(request, response, COOKIE_NAME);
-        return req;
-    }
-
+    
     private String serialize(OAuth2AuthorizationRequest object) {
         return Base64.getUrlEncoder()
                 .encodeToString(SerializationUtils.serialize(object));
     }
-
-    private OAuth2AuthorizationRequest deserialize(String value) {
-        return (OAuth2AuthorizationRequest) SerializationUtils.deserialize(
-                Base64.getUrlDecoder().decode(value));
+    
+    
+    @Override
+    public OAuth2AuthorizationRequest loadAuthorizationRequest(HttpServletRequest request) {
+        return getCookieValue(request, COOKIE_NAME)
+                .map(this::deserialize)
+                .orElse(null);
     }
-
+    
+    
     private Optional<String> getCookieValue(HttpServletRequest request, String name) {
         Cookie[] cookies = request.getCookies();
         if (cookies != null) {
@@ -67,6 +57,21 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
         }
         return Optional.empty();
     }
+    
+    private OAuth2AuthorizationRequest deserialize(String value) {
+        return (OAuth2AuthorizationRequest) SerializationUtils.deserialize(
+                Base64.getUrlDecoder().decode(value));
+    }
+
+
+    @Override
+    public OAuth2AuthorizationRequest removeAuthorizationRequest(HttpServletRequest request,
+                                                                  HttpServletResponse response) {
+        OAuth2AuthorizationRequest req = loadAuthorizationRequest(request);
+        deleteCookie(request, response, COOKIE_NAME);
+        return req;
+    }
+
 
     private void deleteCookie(HttpServletRequest request,
                                HttpServletResponse response,
