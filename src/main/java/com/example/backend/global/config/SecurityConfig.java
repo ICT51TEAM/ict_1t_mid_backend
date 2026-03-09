@@ -88,8 +88,8 @@ public class SecurityConfig {
                                 .baseUri("/oauth2/authorization")
                                 .authorizationRequestRepository(cookieAuthorizationRequestRepository())
                                 .authorizationRequestResolver(authorizationRequestResolver()))
-                        .redirectionEndpoint(redir -> redir
-                                .baseUri("/login/oauth2/code/*"))
+                        //.redirectionEndpoint(redir -> redir
+                        //        .baseUri("/login/oauth2/code/*"))
                         .successHandler(oAuth2AuthenticationSuccessHandler())
                         .failureHandler(new SimpleUrlAuthenticationFailureHandler(
                                 "http://localhost:5173/login?error=true")));
@@ -104,7 +104,8 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler() {
-        return (request, response, authentication) -> {
+    	System.out.println("핸들러 진입 성공");
+    	return (request, response, authentication) -> {
             try {
                 OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
                 Map<String, Object> attributes = oAuth2User.getAttributes();
@@ -117,8 +118,6 @@ public class SecurityConfig {
                 if (properties != null && properties.get("nickname") != null) {
                     nickname = properties.get("nickname").toString();
                 }
-
-                System.out.println("=== 카카오 인증 성공: " + nickname + " ===");
 
                 // 2. ★ DB 저장 로직 호출  ★
                 // 이제 Map 형태로 user와 isNewUser를 받아옵니다.
@@ -133,11 +132,13 @@ public class SecurityConfig {
 
                 // 3. JWT 토큰 생성
                 String accessToken = jwtUtil.createToken(user.getId(), user.getEmail());
+                String refreshToken = jwtUtil.createRefreshToken(user.getId(), user.getEmail());
 
-                // 4. 프론트엔드 콜백 URL로 리다이렉트 (isNewUser와 nickname 추가)
+                // 4. 프론트엔드 콜백 URL로 리다이렉트 
                 UriComponentsBuilder uriBuilder = UriComponentsBuilder
                         .fromUriString("http://localhost:5173/auth/kakao/callback")
-                        .queryParam("token", accessToken)
+                        .queryParam("accessToken", accessToken)
+                        .queryParam("refreshToken", refreshToken)
                         .queryParam("isNewUser", isNewUser); // 신규 가입 여부 전달
 
                 if (isNewUser) {

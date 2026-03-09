@@ -12,6 +12,7 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -117,11 +118,18 @@ public class AuthController implements AuthControllerDocs {
 							refreshTokenRepository.save(newRefreshToken);
 						});
 			
+			// 6. 프론트엔드 전달용 UserProfileDto userProfile
+			UserProfileDto userProfileDto = UserProfileDto.builder()
+					.id(user.getId())
+					.email(user.getEmail())
+					.profileImageUrl(user.getProfileImageUrl())
+					.build();
 			
 			Map<String, Object> response = new HashMap<>();
 			response.put("accessToken", accessToken);    
 			response.put("refreshToken", refreshToken); 
-			response.put("user", userProfile);
+			response.put("user", userProfileDto);
+			
 			return ResponseEntity.ok()
 					.header("Authorization", "Bearer " + accessToken)
 					.header("X-Refresh-Token",refreshToken)
@@ -130,7 +138,7 @@ public class AuthController implements AuthControllerDocs {
 			// 3. 로그인 실패: 401 Unauthorized 반환
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("이메일 또는 비밀번호가 일치하지 않습니다.");
 		}
-	}
+	}/////
 
 	/**
 	 * [2] 회원가입 — POST /api/auth/signup
@@ -186,23 +194,52 @@ public class AuthController implements AuthControllerDocs {
 		// 1. 서비스 호출 결과가 Map으로 변경됨
 		Map<String, Object> loginResult = kakaoService.processKakaoLogin(dto.getKakaoId(), dto.getUsername());
 
-		UserEntity user = (UserEntity) loginResult.get("user");
+		UserEntity user = Optional.ofNullable((UserEntity) loginResult.get("user"))
+			    .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "카카오 로그인 인증 실패"));
 		boolean isNewUser = (boolean) loginResult.get("isNewUser"); // 신규 여부 추출
+		// 2. Spring Security 신분증(Authentication) 만들기
+		Authentication authentication = new UsernamePasswordAuthenticationToken(
+				user.getEmail(), null, new ArrayList<>());
+		// 3. Security 금고에 신분증 넣기
+		SecurityContext context = SecurityContextHolder.createEmptyContext();
+		context.setAuthentication(authentication);
+		SecurityContextHolder.setContext(context);
 
-		// 2. 세션 인증 처리
-		Authentication authentication = new UsernamePasswordAuthenticationToken(user.getEmail(), null,
-				new ArrayList<>());
-		SecurityContextHolder.getContext().setAuthentication(authentication);
-		session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
-				SecurityContextHolder.getContext());
+		// 4. 세션(HttpSession)에 이 금고 정보를 저장하기 (핵심!)
+		session.setAttribute(
+				HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
+				context);
+			
+		// 5. 성공 시 프로필 정보 반환
+		String accessToken = jwtUtil.createToken(user.getId(), user.getEmail());
+		String refreshToken = jwtUtil.createRefreshToken(user.getId(), user.getEmail());
 
-		// 3. 응답 객체 생성 (isNewUser 포함)
+		refreshTokenRepository.findByUserId(user.getId())
+			.ifPresentOrElse(
+					existingToken -> existingToken.update(refreshToken, LocalDateTime.now().plusDays(7)),
+					() -> {
+						RefreshToken newRefreshToken = new RefreshToken(user, refreshToken, LocalDateTime.now().plusDays(7));
+						refreshTokenRepository.save(newRefreshToken);
+					});
+		// 6. 프론트엔드 전달용 UserProfileDto userProfile
+		UserProfileDto userProfileDto = UserProfileDto.builder()
+				.id(user.getId())
+				.email(user.getEmail())
+				.profileImageUrl(user.getProfileImageUrl())
+				.build();
+
+		// 7. 응답 객체 생성 (isNewUser 포함)
 		Map<String, Object> response = new HashMap<>();
-		response.put("user", user);
+		response.put("user", userProfileDto);
 		response.put("isNewUser", isNewUser);
-
-		return ResponseEntity.ok(response);
-	}
+		response.put("accessToken", accessToken);
+	    response.put("refreshToken", refreshToken);
+	
+	    return ResponseEntity.ok()
+					.header("Authorization", "Bearer " + accessToken)
+					.header("X-Refresh-Token",refreshToken)
+					.body(response);
+	}/////
 
 	/**
 	 * [5] 이메일 인증 코드 발송 — POST /api/auth/email/send-code

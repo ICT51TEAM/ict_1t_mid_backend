@@ -26,7 +26,9 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
             return;
         }
         Cookie cookie = new Cookie(COOKIE_NAME, serialize(authorizationRequest));
-        cookie.setPath("/");
+        //cookie.setPath("/");
+        String contextPath = request.getContextPath();
+        cookie.setPath(contextPath != null && !contextPath.isEmpty() ? contextPath : "/");
         cookie.setHttpOnly(true); // 자바스크립트의 스틸 방지
         cookie.setMaxAge(COOKIE_EXPIRE_SECONDS);
         response.addCookie(cookie);
