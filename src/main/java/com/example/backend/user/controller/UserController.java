@@ -22,6 +22,7 @@ import com.example.backend.global.config.JwtUtil;
 import com.example.backend.user.dto.ChangePasswordDto;
 import com.example.backend.user.dto.UpdateProfileDto;
 import com.example.backend.user.dto.UserProfileDto;
+import com.example.backend.user.dto.UserSettingsDto;
 import com.example.backend.user.entity.UserEntity;
 import com.example.backend.user.repository.UserRepository;
 import com.example.backend.user.service.UserService;
@@ -239,5 +240,17 @@ public class UserController implements UserControllerDocs {
     // {
     // // 여기에 코드를 작성하세요.
     // }
+    
+    @GetMapping("/me/settings")
+    public ResponseEntity<?> getSettings(@AuthenticationPrincipal Long userId) {
+        return ResponseEntity.ok(userService.getSettings(userId));
+    }
+
+    @PutMapping("/me/settings")
+    public ResponseEntity<?> updateSettings(
+            @RequestBody UserSettingsDto request,
+            @AuthenticationPrincipal Long userId) {
+        return ResponseEntity.ok(userService.updateSettings(userId, request));
+    }
 
 }

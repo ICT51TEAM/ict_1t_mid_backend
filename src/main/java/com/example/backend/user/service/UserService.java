@@ -28,6 +28,11 @@ import com.example.backend.user.repository.UserRepository;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 
+import com.example.backend.user.dto.UserSettingsDto;
+import com.example.backend.user.entity.UserSettingsEntity;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+
 /**
  * [사용자 서비스 (User Service)]
  * - 프로필 조회/수정, 프로필 이미지 업로드, 비밀번호 변경, 회원탈퇴, 설정 관리
@@ -78,9 +83,9 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-//@Builder
 public class UserService {
     // <리포지토리 주입>
+	
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final FriendshipRepository friendshipRepository;
@@ -91,6 +96,9 @@ public class UserService {
     @Value("${app.upload.dir:uploads}")
     private String uploadDir;
 
+    @PersistenceContext
+	private EntityManager entityManager;
+    
     private static final long MAX_PROFILE_IMAGE_SIZE = 10L * 1024L * 1024L;
     private static final List<String> ALLOWED_IMAGE_EXTENSIONS = List.of("jpg", "jpeg", "png", "webp");
 
@@ -409,5 +417,43 @@ public class UserService {
     // public void updateSettings(Long userId, UserSettingsDto dto) {
     // // 여기에 설정 수정 로직을 작성하세요.
     // }
+    @Transactional
+    public UserSettingsDto getSettings(Long userId) {
+        UserSettingsEntity settings = entityManager
+            .createQuery("SELECT s FROM UserSettingsEntity s WHERE s.user.id = :userId", UserSettingsEntity.class)
+            .setParameter("userId", userId)
+            .getResultStream().findFirst()
+            .orElseGet(() -> {
+                UserEntity user = userRepository.findById(userId)
+                    .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
+                UserSettingsEntity newSettings = UserSettingsEntity.builder()
+                    .user(user)
+                    .pushNotification(true)
+                    .build();
+                entityManager.persist(newSettings);
+                return newSettings;
+            });
+        return UserSettingsDto.builder()
+            .notificationEnabled(Boolean.TRUE.equals(settings.getPushNotification()))
+            .build();
+    }
+
+    @Transactional
+    public UserSettingsDto updateSettings(Long userId, UserSettingsDto dto) {
+        UserSettingsEntity settings = entityManager
+            .createQuery("SELECT s FROM UserSettingsEntity s WHERE s.user.id = :userId", UserSettingsEntity.class)
+            .setParameter("userId", userId)
+            .getResultStream().findFirst()
+            .orElseGet(() -> {
+                UserEntity user = userRepository.findById(userId)
+                    .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
+                UserSettingsEntity newSettings = UserSettingsEntity.builder()
+                    .user(user).build();
+                entityManager.persist(newSettings);
+                return newSettings;
+            });
+        settings.setPushNotification(dto.isNotificationEnabled());
+        return dto;
+    }
 
 }
