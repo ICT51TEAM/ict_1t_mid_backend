@@ -78,7 +78,7 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-@Builder
+//@Builder
 public class UserService {
     // <리포지토리 주입>
     private final UserRepository userRepository;

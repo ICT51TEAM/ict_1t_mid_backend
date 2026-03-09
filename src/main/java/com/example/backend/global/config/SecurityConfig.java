@@ -33,6 +33,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.net.URLEncoder;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 @Configuration
@@ -168,7 +169,12 @@ public class SecurityConfig {
                 "capacitor://localhost"));
 
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(Arrays.asList("*"));
+        //config.setAllowedHeaders(Arrays.asList("*"));
+        config.setAllowedHeaders(List.of(
+				"Authorization",//JWT Bearer 토큰
+				"Content-Type",//application/json
+				"X-Requested-With"//Ajax 요청 식별				
+		));
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
