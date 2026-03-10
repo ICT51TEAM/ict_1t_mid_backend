@@ -184,18 +184,18 @@ public class SecurityConfig {
     public OAuth2AuthorizationRequestResolver authorizationRequestResolver() {
         DefaultOAuth2AuthorizationRequestResolver resolver = new DefaultOAuth2AuthorizationRequestResolver(
                 clientRegistrationRepository, "/oauth2/authorization");
-        resolver.setAuthorizationRequestCustomizer(customizer -> {
-            customizer.attributes(attrs -> {
-                attrs.remove("code_challenge");
-            });
-            customizer.additionalParameters(params -> {
-                params.remove("code_challenge");
+        resolver.setAuthorizationRequestCustomizer(customizer -> customizer.attributes(attrs -> {
+            attrs.remove("code_challenge");
+            attrs.remove("code_challenge_method");
+        })
+                .additionalParameters(params -> {
+                    params.remove("code_challenge");
+                    params.remove("code_challenge_method");
 
-                // 카카오에게 매번 로그인 창을 띄우라고 명령 ★
-                // "login": 로그인 폼 출력 / "consent": 동의 화면 출력
-                params.put("prompt", "login");
-            });
-        });
+                    // 카카오에게 매번 로그인 창을 띄우라고 명령 ★
+                    // "login": 로그인 폼 출력 / "consent": 동의 화면 출력
+                    params.put("prompt", "login");
+                }));
         return resolver;
     }
 }
