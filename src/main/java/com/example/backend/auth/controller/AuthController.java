@@ -96,13 +96,12 @@ public class AuthController implements AuthControllerDocs {
 			SecurityContextHolder.setContext(context);
 
 			// 4. 세션(HttpSession)에 이 금고 정보를 저장하기 (핵심!)
-			//session.setAttribute(
-			//		HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
-			//		SecurityContextHolder.getContext());
+			// session.setAttribute(
+			// HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
+			// SecurityContextHolder.getContext());
 			session.setAttribute(
 					HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
 					context);
-			
 
 			// 5. 성공 시 프로필 정보 반환
 			UserProfileDto userProfile = authService.getUserProfile(credentials.getEmail());
@@ -111,28 +110,29 @@ public class AuthController implements AuthControllerDocs {
 
 			UserEntity user = userRepository.findById(userProfile.getId()).get();
 			refreshTokenRepository.findByUserId(user.getId())
-				.ifPresentOrElse(
-						existingToken -> existingToken.update(refreshToken, LocalDateTime.now().plusDays(7)),
-						() -> {
-							RefreshToken newRefreshToken = new RefreshToken(user, refreshToken, LocalDateTime.now().plusDays(7));
-							refreshTokenRepository.save(newRefreshToken);
-						});
-			
+					.ifPresentOrElse(
+							existingToken -> existingToken.update(refreshToken, LocalDateTime.now().plusDays(7)),
+							() -> {
+								RefreshToken newRefreshToken = new RefreshToken(user, refreshToken,
+										LocalDateTime.now().plusDays(7));
+								refreshTokenRepository.save(newRefreshToken);
+							});
+
 			// 6. 프론트엔드 전달용 UserProfileDto userProfile
 			UserProfileDto userProfileDto = UserProfileDto.builder()
 					.id(user.getId())
 					.email(user.getEmail())
 					.profileImageUrl(user.getProfileImageUrl())
 					.build();
-			
+
 			Map<String, Object> response = new HashMap<>();
-			response.put("accessToken", accessToken);    
-			response.put("refreshToken", refreshToken); 
+			response.put("accessToken", accessToken);
+			response.put("refreshToken", refreshToken);
 			response.put("user", userProfileDto);
-			
+
 			return ResponseEntity.ok()
 					.header("Authorization", "Bearer " + accessToken)
-					.header("X-Refresh-Token",refreshToken)
+					.header("X-Refresh-Token", refreshToken)
 					.body(response);
 		} else {
 			// 3. 로그인 실패: 401 Unauthorized 반환
@@ -164,26 +164,25 @@ public class AuthController implements AuthControllerDocs {
 	 */
 
 	@PostMapping("/logout")
-	public ResponseEntity<?> logout(@RequestHeader(value = "Authorization",required = false) String authHeader ) {
+	public ResponseEntity<?> logout(@RequestHeader(value = "Authorization", required = false) String authHeader) {
 		if (authHeader != null && authHeader.startsWith("Bearer ")) {
-			  return ResponseEntity.badRequest()
-			            .body(Map.of("error", "유효한 인증 헤더가 필요합니다."));
+			return ResponseEntity.badRequest()
+					.body(Map.of("error", "유효한 인증 헤더가 필요합니다."));
 		}
-			    
-			String accessToken = authHeader.substring(7);
-			
-			//db에서 삭제(폐기)
-			try {
-				Long userId = jwtUtil.getUserIdFromToken(accessToken);
-				
-				refreshTokenRepository.deleteByUserId(userId);
-				return ResponseEntity.ok("로그아웃 되었습니다.");
-				
-			}
-			catch (Exception e) {
-				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("유효하지 않은 토큰입니다.");
-			}
-		
+
+		String accessToken = authHeader.substring(7);
+
+		// db에서 삭제(폐기)
+		try {
+			Long userId = jwtUtil.getUserIdFromToken(accessToken);
+
+			refreshTokenRepository.deleteByUserId(userId);
+			return ResponseEntity.ok("로그아웃 되었습니다.");
+
+		} catch (Exception e) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("유효하지 않은 토큰입니다.");
+		}
+
 	}
 
 	/**
@@ -195,7 +194,7 @@ public class AuthController implements AuthControllerDocs {
 		Map<String, Object> loginResult = kakaoService.processKakaoLogin(dto.getKakaoId(), dto.getUsername());
 
 		UserEntity user = Optional.ofNullable((UserEntity) loginResult.get("user"))
-			    .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "카카오 로그인 인증 실패"));
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "카카오 로그인 인증 실패"));
 		boolean isNewUser = (boolean) loginResult.get("isNewUser"); // 신규 여부 추출
 		// 2. Spring Security 신분증(Authentication) 만들기
 		Authentication authentication = new UsernamePasswordAuthenticationToken(
@@ -209,18 +208,19 @@ public class AuthController implements AuthControllerDocs {
 		session.setAttribute(
 				HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
 				context);
-			
+
 		// 5. 성공 시 프로필 정보 반환
 		String accessToken = jwtUtil.createToken(user.getId(), user.getEmail());
 		String refreshToken = jwtUtil.createRefreshToken(user.getId(), user.getEmail());
 
 		refreshTokenRepository.findByUserId(user.getId())
-			.ifPresentOrElse(
-					existingToken -> existingToken.update(refreshToken, LocalDateTime.now().plusDays(7)),
-					() -> {
-						RefreshToken newRefreshToken = new RefreshToken(user, refreshToken, LocalDateTime.now().plusDays(7));
-						refreshTokenRepository.save(newRefreshToken);
-					});
+				.ifPresentOrElse(
+						existingToken -> existingToken.update(refreshToken, LocalDateTime.now().plusDays(7)),
+						() -> {
+							RefreshToken newRefreshToken = new RefreshToken(user, refreshToken,
+									LocalDateTime.now().plusDays(7));
+							refreshTokenRepository.save(newRefreshToken);
+						});
 		// 6. 프론트엔드 전달용 UserProfileDto userProfile
 		UserProfileDto userProfileDto = UserProfileDto.builder()
 				.id(user.getId())
@@ -233,12 +233,12 @@ public class AuthController implements AuthControllerDocs {
 		response.put("user", userProfileDto);
 		response.put("isNewUser", isNewUser);
 		response.put("accessToken", accessToken);
-	    response.put("refreshToken", refreshToken);
-	
-	    return ResponseEntity.ok()
-					.header("Authorization", "Bearer " + accessToken)
-					.header("X-Refresh-Token",refreshToken)
-					.body(response);
+		response.put("refreshToken", refreshToken);
+
+		return ResponseEntity.ok()
+				.header("Authorization", "Bearer " + accessToken)
+				.header("X-Refresh-Token", refreshToken)
+				.body(response);
 	}/////
 
 	/**
@@ -287,7 +287,6 @@ public class AuthController implements AuthControllerDocs {
 		return ResponseEntity.ok("이메일을 발송했습니다");
 	}
 
-
 	/**
 	 * [7] 이메일 인증 코드 검증 — POST /api/auth/email/verify-code
 	 */
@@ -298,6 +297,7 @@ public class AuthController implements AuthControllerDocs {
 			return ResponseEntity.badRequest().body("인증 실패");
 		return ResponseEntity.ok("인증 성공");
 	}
+
 	/**
 	 * [8] 비밀번호 재설정 — POST /api/auth/reset-password
 	 */
@@ -323,86 +323,85 @@ public class AuthController implements AuthControllerDocs {
 	 */
 	@GetMapping("/email/check")
 	public ResponseEntity<Map<String, Boolean>> checkEmail(@RequestParam String email) {
-	    boolean isDuplicate = userRepository.existsByEmail(email);
-	    return ResponseEntity.ok(Map.of("isDuplicate", isDuplicate));
+		boolean isDuplicate = userRepository.existsByEmail(email);
+		return ResponseEntity.ok(Map.of("isDuplicate", isDuplicate));
 	}
-	
+
 	/**
 	 * [11] Access Token 재발급 — POST /api/auth/refresh
 	 */
 	@PostMapping("/refresh")
 	public ResponseEntity<?> refresh(@RequestBody Map<String, String> request) {
 		String refreshToken = request.get("refreshToken");
-		
-		//refreshToken 유효성 검증
+
+		// refreshToken 유효성 검증
 		if (refreshToken == null || refreshToken.isEmpty()) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(Map.of("error","Refresh Token이 필요합니다"));			
+					.body(Map.of("error", "Refresh Token이 필요합니다"));
 		}
-		
+
 		// token 유효성 및 타입 확인
-		if(!jwtUtil.validationToken(refreshToken)) {
+		if (!jwtUtil.validationToken(refreshToken)) {
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-					.body(Map.of("error","유효하지 않은 Refresh Token입니다"));	
+					.body(Map.of("error", "유효하지 않은 Refresh Token입니다"));
 		}
-		if(!jwtUtil.isRefreshToken(refreshToken)) {
+		if (!jwtUtil.isRefreshToken(refreshToken)) {
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-					.body(Map.of("error","Access Token이 아닌 Refresh Token이 필요합니다."));	
+					.body(Map.of("error", "Access Token이 아닌 Refresh Token이 필요합니다."));
 		}
-		
+
 		try {
 			Long userId = jwtUtil.getUserIdFromToken(refreshToken);
 			String email = jwtUtil.getUserEmailFromToken(refreshToken);
-			
+
 			// db에서 토큰 검증
 			RefreshToken dbToken = refreshTokenRepository.findByToken(refreshToken)
 					.orElseThrow(() -> new RuntimeException("DB에 Token이 없습니다"));
-			
+
 			// 기간 만료 확인
-			if(dbToken.getExpiryDate().isBefore(LocalDateTime.now())) {
+			if (dbToken.getExpiryDate().isBefore(LocalDateTime.now())) {
 				refreshTokenRepository.delete(dbToken);
 				throw new RuntimeException("Token이 만료되었습니다");
 			}
-			
+
 			// 새로운 액세스 토큰 담아서 응답
 			String newAccessToken = jwtUtil.createToken(userId, email);
-			
+
 			Map<String, Object> response = new HashMap<>();
 			response.put("accessToken", newAccessToken);
-			
+
 			return ResponseEntity.ok(response);
-		}
-		catch (RuntimeException e) {
+		} catch (RuntimeException e) {
 			// 토큰이 유효하지 않은 경우 에러 반환
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
 		}
-		
+
 	}
-	
+
 	/**
 	 * [12] Token 정보 조회 — GET /api/auth/token-info
 	 */
 	@GetMapping("/token-info")
 	public ResponseEntity<?> getToken(@RequestHeader("Authorization") String authHeader) {
-		if(authHeader == null || !authHeader.startsWith("Bearer ")) {
+		if (authHeader == null || !authHeader.startsWith("Bearer ")) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(Map.of("error", "유효한 Authorization 헤더가 필요합니다."));	
+					.body(Map.of("error", "유효한 Authorization 헤더가 필요합니다."));
 		}
-		
+
 		String token = authHeader.substring(7);
-		
+
 		// 토큰 유효성 확인
-		if(!jwtUtil.validationToken(token)) {
+		if (!jwtUtil.validationToken(token)) {
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-					.body(Map.of("error", "유효하지 않은 Token입니다."));	
+					.body(Map.of("error", "유효하지 않은 Token입니다."));
 		}
-		
-		try {	
+
+		try {
 			Long userId = jwtUtil.getUserIdFromToken(token);
 			String email = jwtUtil.getUserEmailFromToken(token);
 			long ExpirationTime = jwtUtil.getExpirationTime(token);
 			boolean isExpired = jwtUtil.isTokenExpired(token);
-			
+
 			Map<String, Object> response = new HashMap<>();
 			response.put("userId", userId);
 			response.put("email", email);
@@ -410,15 +409,13 @@ public class AuthController implements AuthControllerDocs {
 			response.put("isExpired", isExpired);
 			response.put("isAccessToken", jwtUtil.isAccessToken(token));
 			response.put("isRefreshToken", jwtUtil.isRefreshToken(token));
-			
+
 			return ResponseEntity.ok(response);
-		}
-		catch(Exception e) {
+		} catch (Exception e) {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(Map.of("error", "Token 정보 조회 중 오류가 발생했습니다."));	
+					.body(Map.of("error", "Token 정보 조회 중 오류가 발생했습니다."));
 		}
-		
+
 	}
 
-	
 }
