@@ -150,7 +150,7 @@ public class SecurityConfig {
             } catch (Exception e) {
                 System.out.println("=== SuccessHandler 에러 발생 ===");
                 e.printStackTrace();
-                response.sendRedirect("http://100.91.129.24:5173/login?error=handler");
+                response.sendRedirect("http://100.91.129.24:5173/login?error=true");
             }
         };
     }
@@ -167,13 +167,13 @@ public class SecurityConfig {
                 "http://localhost",
                 "capacitor://localhost"));
 
-        co nfig.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        //config.setAllowedHeaders(Arrays
-                    config.setAl lo wedHeaders(Li
-                "Authorization" ,/ /JWT Bearer 토큰
-                "Content-Type",//app lication/j
-        		"X-Requested-With"//Ajax 요청 식별				
-		));
+        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+
+        config.setAllowedHeaders(Arrays.asList(
+                "Authorization", // JWT Bearer 토큰
+                "Content-Type", // application/json
+                "X-Requested-With")); // Ajax 요청 식별
+
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -185,21 +185,18 @@ public class SecurityConfig {
     public OAuth2AuthorizationRequestResolver authorizationRequestResolver() {
         DefaultOAuth2AuthorizationRequestResolver resolver = new DefaultOAuth2AuthorizationRequestResolver(
                 clientRegistrationRepository, "/oauth2/authorization");
- esolver.setAuthorizationRequestC
-            ustomizer.attributes(attrs -> {
-            attrs.remove("code_challenge");
-        		
-                })
-                    onalParameters(params -> {
-                    params.remove("code_challenge");
+        resolver.setAuthorizationRequestCustomizer(customizer -> {
+            customizer.attributes(attrs -> {
+                attrs.remove("code_challenge");
+            });
+            customizer.additionalParameters(params -> {
+                params.remove("code_challenge");
 
-                    
-                    // 카카오에게 매번 로그인 창을 띄우라고 명령 ★
-                    // "login": 로그인 폼 출력 / "consen
-                    params.put("prompt", "login");
-           }));
-
-     
-
-
+                // 카카오에게 매번 로그인 창을 띄우라고 명령 ★
+                // "login": 로그인 폼 출력 / "consent": 동의 화면 출력
+                params.put("prompt", "login");
+            });
+        });
+        return resolver;
+    }
 }
