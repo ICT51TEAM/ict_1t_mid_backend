@@ -22,7 +22,6 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.util.UriComponentsBuilder;
 
-
 import com.example.backend.user.entity.UserEntity; //(본인의 User 엔티티 경로 확인)
 
 import jakarta.mail.Session;
@@ -45,16 +44,16 @@ public class SecurityConfig {
     private final JwtUtil jwtUtil;
     private final KakaoService kakaoService;
 
-    // 수동 생성자는 삭제하거나 모든 필드를 포함해야 합니다. 
+    // 수동 생성자는 삭제하거나 모든 필드를 포함해야 합니다.
     // @RequiredArgsConstructor가 있으므로 아래 생성자는 지우셔도 됩니다.
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-		http
+        http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session
-                		.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/auth/**",
@@ -76,8 +75,7 @@ public class SecurityConfig {
                                 "/photos/**",
                                 "/albums/**",
                                 "/uploads/**",
-                                "/qna/**"
-                        		)
+                                "/qna/**")
                         .permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(new JWTAuthenticationFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class)
@@ -88,11 +86,11 @@ public class SecurityConfig {
                                 .baseUri("/oauth2/authorization")
                                 .authorizationRequestRepository(cookieAuthorizationRequestRepository())
                                 .authorizationRequestResolver(authorizationRequestResolver()))
-                        //.redirectionEndpoint(redir -> redir
-                        //        .baseUri("/login/oauth2/code/*"))
+                        // .redirectionEndpoint(redir -> redir
+                        // .baseUri("/login/oauth2/code/*"))
                         .successHandler(oAuth2AuthenticationSuccessHandler())
                         .failureHandler(new SimpleUrlAuthenticationFailureHandler(
-                                "http://localhost:5173/login?error=true")));
+                                "http://100.91.129.24:5173/login?error=true")));
 
         return http.build();
     }
@@ -104,22 +102,22 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler() {
-    	System.out.println("핸들러 진입 성공");
-    	return (request, response, authentication) -> {
+        System.out.println("핸들러 진입 성공");
+        return (request, response, authentication) -> {
             try {
                 OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
                 Map<String, Object> attributes = oAuth2User.getAttributes();
 
                 // 1. 카카오 정보 추출
                 Long kakaoId = Long.parseLong(attributes.get("id").toString());
-                
+
                 Map<String, Object> properties = (Map<String, Object>) attributes.get("properties");
                 String nickname = "Unknown";
                 if (properties != null && properties.get("nickname") != null) {
                     nickname = properties.get("nickname").toString();
                 }
 
-                // 2. ★ DB 저장 로직 호출  ★
+                // 2. ★ DB 저장 로직 호출 ★
                 // 이제 Map 형태로 user와 isNewUser를 받아옵니다.
                 Map<String, Object> loginResult = kakaoService.processKakaoLogin(kakaoId, nickname);
                 if (loginResult == null || !loginResult.containsKey("user") || !loginResult.containsKey("isNewUser")) {
@@ -127,16 +125,16 @@ public class SecurityConfig {
                 }
                 UserEntity user = (UserEntity) loginResult.get("user");
                 boolean isNewUser = (boolean) loginResult.get("isNewUser");
-                
+
                 System.out.println("=== DB 저장/조회 완료 (신규여부: " + isNewUser + ") ===");
 
                 // 3. JWT 토큰 생성
                 String accessToken = jwtUtil.createToken(user.getId(), user.getEmail());
                 String refreshToken = jwtUtil.createRefreshToken(user.getId(), user.getEmail());
 
-                // 4. 프론트엔드 콜백 URL로 리다이렉트 
+                // 4. 프론트엔드 콜백 URL로 리다이렉트
                 UriComponentsBuilder uriBuilder = UriComponentsBuilder
-                        .fromUriString("http://localhost:5173/auth/kakao/callback")
+                        .fromUriString("http://100.91.129.24:5173/auth/kakao/callback")
                         .queryParam("accessToken", accessToken)
                         .queryParam("refreshToken", refreshToken)
                         .queryParam("isNewUser", isNewUser); // 신규 가입 여부 전달
@@ -152,11 +150,10 @@ public class SecurityConfig {
             } catch (Exception e) {
                 System.out.println("=== SuccessHandler 에러 발생 ===");
                 e.printStackTrace();
-                response.sendRedirect("http://localhost:5173/login?error=handler");
+                response.sendRedirect("http://100.91.129.24:5173/login?error=handler");
             }
         };
     }
-
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
@@ -164,17 +161,18 @@ public class SecurityConfig {
 
         config.setAllowedOrigins(Arrays.asList(
                 "http://localhost:5173",
+                "http://100.91.129.24:5173",
                 "http://192.168.0.44:5173",
                 "http://10.0.2.2:8080",
                 "http://localhost",
                 "capacitor://localhost"));
 
-        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        //config.setAllowedHeaders(Arrays.asList("*"));
-        config.setAllowedHeaders(List.of(
-				"Authorization",//JWT Bearer 토큰
-				"Content-Type",//application/json
-				"X-Requested-With"//Ajax 요청 식별				
+        co nfig.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        //config.setAllowedHeaders(Arrays
+                    config.setAl lo wedHeaders(Li
+                "Authorization" ,/ /JWT Bearer 토큰
+                "Content-Type",//app lication/j
+        		"X-Requested-With"//Ajax 요청 식별				
 		));
         config.setAllowCredentials(true);
 
@@ -187,23 +185,21 @@ public class SecurityConfig {
     public OAuth2AuthorizationRequestResolver authorizationRequestResolver() {
         DefaultOAuth2AuthorizationRequestResolver resolver = new DefaultOAuth2AuthorizationRequestResolver(
                 clientRegistrationRepository, "/oauth2/authorization");
+ esolver.setAuthorizationRequestC
+            ustomizer.attributes(attrs -> {
+            attrs.remove("code_challenge");
+        		
+                })
+                    onalParameters(params -> {
+                    params.remove("code_challenge");
 
-        resolver.setAuthorizationRequestCustomizer(customizer -> 
-        	customizer.attributes(attrs -> {
-        		attrs.remove("code_challenge");
-        		attrs.remove("code_challenge_method");
-        })
-        .additionalParameters(params -> {
-               params.remove("code_challenge");
-               params.remove("code_challenge_method");
-               
-               // 카카오에게 매번 로그인 창을 띄우라고 명령 ★
-               // "login": 로그인 폼 출력 / "consent": 동의 화면 출력
-               params.put("prompt", "login");
+                    
+                    // 카카오에게 매번 로그인 창을 띄우라고 명령 ★
+                    // "login": 로그인 폼 출력 / "consen
+                    params.put("prompt", "login");
            }));
 
-        return resolver;
-    }
-    
+     
+
 
 }
