@@ -90,7 +90,7 @@ public class SecurityConfig {
                         // .baseUri("/login/oauth2/code/*"))
                         .successHandler(oAuth2AuthenticationSuccessHandler())
                         .failureHandler(new SimpleUrlAuthenticationFailureHandler(
-                                "http://100.91.129.24:5173/login?error=true")));
+                                "http://localhost:5173/login?error=true")));
 
         return http.build();
     }
@@ -134,7 +134,7 @@ public class SecurityConfig {
 
                 // 4. 프론트엔드 콜백 URL로 리다이렉트
                 UriComponentsBuilder uriBuilder = UriComponentsBuilder
-                        .fromUriString("http://100.91.129.24:5173/auth/kakao/callback")
+                        .fromUriString("http://localhost:5173/auth/kakao/callback")
                         .queryParam("accessToken", accessToken)
                         .queryParam("refreshToken", refreshToken)
                         .queryParam("isNewUser", isNewUser); // 신규 가입 여부 전달
@@ -150,7 +150,7 @@ public class SecurityConfig {
             } catch (Exception e) {
                 System.out.println("=== SuccessHandler 에러 발생 ===");
                 e.printStackTrace();
-                response.sendRedirect("http://100.91.129.24:5173/login?error=true");
+                response.sendRedirect("http://localhost:5173/login?error=handler");
             }
         };
     }
@@ -161,7 +161,6 @@ public class SecurityConfig {
 
         config.setAllowedOrigins(Arrays.asList(
                 "http://localhost:5173",
-                "http://100.91.129.24:5173",
                 "http://192.168.0.44:5173",
                 "http://10.0.2.2:8080",
                 "http://localhost",
