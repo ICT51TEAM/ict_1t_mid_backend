@@ -2,6 +2,9 @@ package com.example.backend.auth.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
+
 import jakarta.servlet.http.HttpSession;
 import java.util.Map;
 
@@ -11,6 +14,8 @@ import com.example.backend.auth.dto.KakaoLoginDto;
 import com.example.backend.auth.dto.LoginRequestDto;
 import com.example.backend.auth.dto.ResetPasswordDto;
 import com.example.backend.auth.dto.SignupRequestDto;
+import com.example.backend.auth.dto.TokenRefreshRequest;
+
 import jakarta.validation.Valid;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,7 +31,7 @@ public interface AuthControllerDocs {
     ResponseEntity<Map<String, String>> signup(@Valid @RequestBody SignupRequestDto requestDto);
 
     @Operation(summary = "로그아웃", description = "현재 계정에서 로그아웃 처리합니다.")
-    ResponseEntity<?> logout();
+    public ResponseEntity<?> logout(@RequestHeader(value = "Authorization",required = false) String authHeader );
 
     @Operation(summary = "카카오 로그인", description = "카카오 계정으로 로그인합니다.", tags = { "1. 로그인 (최우선)" })
     ResponseEntity<?> kakaoLogin(@RequestBody KakaoLoginDto dto, HttpSession session);
@@ -45,4 +50,10 @@ public interface AuthControllerDocs {
 
     @Operation(summary = "비밀번호 재설정", description = "새로운 비밀번호로 변경합니다.")
     ResponseEntity<?> resetPassword(@RequestBody ResetPasswordDto request);
+    
+    @Operation(summary = "이메일 중복 여부 체크", description = "회원 가입전 인증 메일 발송시 기존 회원 메일 등록여부를 체크합니다")
+    ResponseEntity<Map<String, Boolean>> checkEmail(@RequestParam String email);
+    
+    @Operation(summary = "refreshToken 체크 ", description = "로그인한 회원의 refresh토큰 소유 여부와 만료 기한을 체크 후 재발급 또는 삭제처리합니다.")
+    public ResponseEntity<?> refresh(@RequestBody Map<String, String> request);
 }

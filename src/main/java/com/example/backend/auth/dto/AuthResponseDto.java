@@ -3,7 +3,9 @@ package com.example.backend.auth.dto;
 import com.example.backend.user.dto.UserProfileDto;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Data;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 /**
  * [인증 응답 DTO (Auth Response)]
@@ -22,10 +24,14 @@ import lombok.Getter;
  * - @Builder : 빌더 패턴 (서비스 레이어에서
  * AuthResponseDto.builder().token(...).user(...).build() 형태로 생성)
  */
+//@Data // Getter, Setter, RequiredArgsConstructor 등을 모두 포함
 @Getter
-@AllArgsConstructor
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class AuthResponseDto {
     private String token;
+    private String refreshToken; // 이 이름이 정확히 일치해야 합니다.
     private UserProfileDto user;
+
 }
