@@ -162,6 +162,7 @@ public class SecurityConfig {
         config.setAllowedOrigins(Arrays.asList(
                 "http://localhost:5173",
                 "http://192.168.0.44:5173",
+                "http://192.168.0.30:5173",
                 "http://10.0.2.2:8080",
                 "http://localhost",
                 "capacitor://localhost"));
