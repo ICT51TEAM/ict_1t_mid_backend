@@ -5,7 +5,6 @@ import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -147,21 +146,13 @@ public class UserController implements UserControllerDocs {
      *         - user.setProfileImageUrl(저장된 경로)
      *         - DB 업데이트 후 이미지 URL 반환
      */
-    @PostMapping(value = "/me/profile-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping("/me/profile-image")
     public ResponseEntity<?> uploadProfileImage(
             @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "userId", required = false) Long userIdParam,
-            @AuthenticationPrincipal Long authUserId) {
-        // userId를 FormData에서 직접 받거나, JWT @AuthenticationPrincipal에서 받음
-        // 원격 서버 프록시 환경에서는 JWT 인증이 안 될 수 있으므로 FormData의 userId를 우선 사용
-        Long userId = (authUserId != null) ? authUserId : userIdParam;
-        if (userId == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "userId가 필요합니다."));
-        }
+            @AuthenticationPrincipal Long userId) {
         String imageUrl = userService.uploadProfileImage(userId, file);
         return ResponseEntity.ok(Map.of("profileImageUrl", imageUrl));
     }
-
     /**
      * [5] 비밀번호 변경 — PUT /api/users/me/password
      * 
@@ -249,7 +240,7 @@ public class UserController implements UserControllerDocs {
     // {
     // // 여기에 코드를 작성하세요.
     // }
-
+    
     @GetMapping("/me/settings")
     public ResponseEntity<?> getSettings(@AuthenticationPrincipal Long userId) {
         return ResponseEntity.ok(userService.getSettings(userId));
