@@ -73,8 +73,37 @@ public class FriendController implements FriendControllerDocs {
     public ResponseEntity<String> sendFriendRequest(
             @AuthenticationPrincipal Long userId,
             @RequestBody FriendRequestDto requestDto) {
+    	System.out.println("userId:"+userId);
         friendService.sendRequest(userId, requestDto.getTargetUserId());
         return ResponseEntity.ok("친구 요청을 성공적으로 발송했습니다.");
+    }
+    
+    // 내가 보낸 친구 요청 중 아직 수락 대기 중인 목록 조회(추가)
+    @GetMapping("/pending/sent")
+    public ResponseEntity<List<FriendResponseDto>> getSentPendingRequests(
+    		Authentication authentication) {
+    	// 1. 인증 객체가 아예 없는 경우 방어 코드
+        if (authentication == null || authentication.getPrincipal() == null) {
+            System.out.println("인증 정보가 없습니다.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        try {
+            // 2. 필터에서 넘겨준 Long 타입의 userId를 꺼냅니다.
+            // (만약 여기서 에러가 난다면 (String)으로 변환 후 Long.valueOf()를 써야 할 수도 있습니다)
+            Long userId = (Long) authentication.getPrincipal();
+            
+            System.out.printf("데이터 조회 시작 - 유효한 유저 ID: {}", userId);
+
+            // 3. 서비스 호출 (이제 userId가 null이 아니므로 500 에러가 발생하지 않습니다)
+            List<FriendResponseDto> sentList = friendService.listSentPendingRequests(userId);
+            return ResponseEntity.ok(sentList);
+            
+        } catch (Exception e) {
+            System.out.printf("컨트롤러 로직 에러: {}", e.getMessage());
+            
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     // 4. 특정된 친구 요청 수락 처리

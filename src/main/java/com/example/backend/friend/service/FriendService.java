@@ -201,4 +201,26 @@ public class FriendService {
                                 })
                                 .collect(Collectors.toList());
         }
+
+		public List<FriendResponseDto> listSentPendingRequests(Long userId) {
+			// 사용자 존재 확인
+			UserEntity user = userRepository.findById(userId)
+					.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+			
+			// 내가 보낸 친구 요청중 pending 상태인 목록 조회
+			return friendshipRepository.findSentPendingRequests(user).stream()
+					.map(friendship -> {
+						// 내가 보낸 것에 대한 상대방 정보 추출
+						UserEntity targetUser = friendship.getToUser();
+						
+						return FriendResponseDto.builder()
+								.friendshipId(friendship.getId())
+								.userId(targetUser.getId())
+								.username(targetUser.getUsername())
+								.profileImageUrl(targetUser.getProfileImageUrl())
+								.status(friendship.getStatus())
+								.build();
+					})
+					.collect(Collectors.toList());
+		}
 }

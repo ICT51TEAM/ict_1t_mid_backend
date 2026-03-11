@@ -153,7 +153,7 @@ public class AuthController implements AuthControllerDocs {
 			@RequestHeader(value = "Authorization", required = false) String authHeader,
 			HttpServletResponse response) {
 		// 토큰 존재 여부 및 형식 체크
-		if (authHeader == null && !authHeader.startsWith("Bearer ")) {
+		if (authHeader == null || !authHeader.startsWith("Bearer ")) {
 
 			return ResponseEntity.badRequest()
 					.body(Map.of("error", "유효한 인증 헤더가 필요합니다."));

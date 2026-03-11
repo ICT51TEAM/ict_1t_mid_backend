@@ -28,4 +28,7 @@ public interface FriendshipRepository extends JpaRepository<Friendship, Long> {
     @Modifying
     @Query("DELETE FROM Friendship f WHERE f.fromUser.id = :userId OR f.toUser.id = :userId")
     void deleteAllByUserId(@Param("userId") Long userId);
+    
+    @Query("SELECT f FROM Friendship f WHERE f.fromUser = :user AND f.status = 'PENDING'")
+    List<Friendship> findSentPendingRequests(@Param("user") UserEntity user);
 }
