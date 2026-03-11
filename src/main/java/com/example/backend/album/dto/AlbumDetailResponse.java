@@ -51,7 +51,7 @@ public class AlbumDetailResponse {
     // [응답] 기록 날짜
     private LocalDate recordDate;
 
-    // [응답] 공개 범위(PUBLIC/FRIENDS/PRIVATE)
+    // [응답] 공개 범위(PUBLIC/FRIENDS_ONLY/PRIVATE)
     private String visibility;
 
     // [응답] 레이아웃 타입

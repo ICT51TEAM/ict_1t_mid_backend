@@ -61,31 +61,35 @@ public interface BadgeRepository extends JpaRepository<Badge, Long> {
 			+ "LEFT JOIN Badge b ON u.id = b.user.id " + "GROUP BY u.id, u.username, u.profileImageUrl "
 			+ "ORDER BY COUNT(b) DESC, u.id ASC")
 	Page<BadgeRankingDto> findByAllBadgeRankings(Pageable pageable);
-
+	
 	// 글로벌 기준 달개 랭킹 통계 산출물(weekly)
 	@Query("SELECT new com.example.backend.badge.dto.BadgeRankingDto(" +
-			"0, u.id, u.username, u.profileImageUrl, COUNT(b)) " +
-			"FROM UserEntity u " +
-			"LEFT JOIN Badge b ON u.id = b.user.id " +
-			"AND b.createdAt BETWEEN :startDate AND :endDate " +
-			"GROUP BY u.id, u.username, u.profileImageUrl " +
-			"ORDER BY COUNT(b) DESC, u.id ASC")
-	Page<BadgeRankingDto> findByAllBadgeRankingsWithDate(
-			@Param("startDate") LocalDateTime startDate,
-			@Param("endDate") LocalDateTime endDate,
-			Pageable pageable);
+	           "0, u.id, u.username, u.profileImageUrl, COUNT(b)) " + 
+	           "FROM UserEntity u " +
+	           "LEFT JOIN Badge b ON u.id = b.user.id " +
+	           "AND b.createdAt BETWEEN :startDate AND :endDate " + 
+	           "GROUP BY u.id, u.username, u.profileImageUrl " +
+	           "ORDER BY COUNT(b) DESC, u.id ASC")
+	    Page<BadgeRankingDto> findByAllBadgeRankingsWithDate(
+	            @Param("startDate") LocalDateTime startDate, 
+	            @Param("endDate") LocalDateTime endDate,
+	            Pageable pageable);
 
 	// 친구 기준 달개 랭킹 통계 산출물(alltime)
 	@Query("SELECT new com.example.backend.badge.dto.BadgeRankingDto(0, u.id, u.username, u.profileImageUrl, COUNT(b)) "
-			+ "FROM UserEntity u "
-			+ "JOIN Badge b ON u.id = b.user.id "
-			+ "JOIN Friendship f ON (u.id = f.fromUser.id OR u.id = f.toUser.id) "
-			+ "WHERE (f.fromUser.id = :myId OR f.toUser.id = :myId) "
-			+ "AND f.status = 'ACCEPTED' "
-			+ "AND u.id != :myId " // :userId -> :myId 로 변경
-			+ "GROUP BY u.id, u.username, u.profileImageUrl "
-			+ "ORDER BY COUNT(b) DESC, u.id ASC")
+		    + "FROM UserEntity u "
+		    + "JOIN Badge b ON u.id = b.user.id " 
+		    + "JOIN Friendship f ON (u.id = f.fromUser.id OR u.id = f.toUser.id) "
+		    + "WHERE (f.fromUser.id = :myId OR f.toUser.id = :myId) " 
+		    + "AND f.status = 'ACCEPTED' "
+		    + "AND u.id != :myId " // :userId -> :myId 로 변경
+		    + "GROUP BY u.id, u.username, u.profileImageUrl "
+		    + "ORDER BY COUNT(b) DESC, u.id ASC")
 	Page<BadgeRankingDto> findByFriendsBadgeRankings(@Param("myId") Long myId, Pageable pageable);
+
+
+	
+	
 
 	/*
 	 * // 달개 관련 통계 산출물 계산 // 1. 총 달개 수: 사용자의 앨범(Album)과 연결된 모든 달개(AlbumDalgae) 카운트
@@ -135,8 +139,4 @@ public interface BadgeRepository extends JpaRepository<Badge, Long> {
 	@Query("DELETE FROM Badge b WHERE b.album.id = :albumId")
 	void deleteByAlbumId(@Param("albumId") Long albumId);
 
-	// 내가 남의 앨범에 남긴 달개 삭제 (탈퇴 시 FK 정리)
-	@Modifying
-	@Query("DELETE FROM Badge b WHERE b.user.id = :userId")
-	void deleteByGivenUserId(@Param("userId") Long userId);
 }

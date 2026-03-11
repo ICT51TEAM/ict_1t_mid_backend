@@ -17,7 +17,6 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.example.backend.auth.repository.PasswordResetTokenRepository;
-import com.example.backend.auth.repository.RefreshTokenRepository;
 import com.example.backend.badge.repository.BadgeRepository;
 import com.example.backend.friend.repository.FriendshipRepository;
 
@@ -86,12 +85,11 @@ import jakarta.persistence.PersistenceContext;
 @Transactional(readOnly = true)
 public class UserService {
     // <리포지토리 주입>
-
+	
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final FriendshipRepository friendshipRepository;
     private final BadgeRepository badgeRepository;
-    private final RefreshTokenRepository refreshTokenRepository;
 
     private final PasswordResetTokenRepository passwordResetTokenRepository;
 
@@ -99,27 +97,29 @@ public class UserService {
     private String uploadDir;
 
     @PersistenceContext
-    private EntityManager entityManager;
-
+	private EntityManager entityManager;
+    
     private static final long MAX_PROFILE_IMAGE_SIZE = 10L * 1024L * 1024L;
     private static final List<String> ALLOWED_IMAGE_EXTENSIONS = List.of("jpg", "jpeg", "png", "webp");
 
-    public UserProfileDto getProfileById(Long userId) {
-        // userId를 db에서 찾기
-        UserEntity user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 ID의 사용자를 찾을 수 없습니다"));
 
-        UserProfileDto dto = UserProfileDto.from(user);
+    public UserProfileDto getProfileById (Long userId) {
+    	// userId를 db에서 찾기
+    	UserEntity user = userRepository.findById(userId)
+    			.orElseThrow(() -> new IllegalArgumentException("해당 ID의 사용자를 찾을 수 없습니다"));
 
-        // 달개 통계 세팅 (받은 달개 집계)
-        var badgeCounts = badgeRepository.countByUserIdGroupByTypeId(userId);
-        long total = badgeCounts.stream().mapToLong(bc -> bc.getCount()).sum();
-        dto.setTotalBadges(total);
-        dto.setBadgeTypes(badgeCounts.size());
+    	UserProfileDto dto = UserProfileDto.from(user);
 
-        return dto;
+    	// 달개 통계 세팅 (받은 달개 집계)
+    	var badgeCounts = badgeRepository.countByUserIdGroupByTypeId(userId);
+    	long total = badgeCounts.stream().mapToLong(bc -> bc.getCount()).sum();
+    	dto.setTotalBadges(total);
+    	dto.setBadgeTypes(badgeCounts.size());
+
+    	return dto;
     }
-
+    
+    
     // * 1. getProfile(Long userId) → UserProfileDto
     // * - userRepository.findById(userId).orElseThrow(() -> new
     // RuntimeException("사용자를 찾을 수 없습니다"))
@@ -152,10 +152,8 @@ public class UserService {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
         // 데이터 변경
-        if (request.getUsername() != null)
-            user.setUsername(request.getUsername());
-        if (request.getVisibility() != null)
-            user.setVisibility(request.getVisibility());
+        if (request.getUsername() != null) user.setUsername(request.getUsername());
+        if (request.getVisibility() != null) user.setVisibility(request.getVisibility());
 
         // 결과 DTO 반영후 반환
         return UserProfileDto.from(user);
@@ -190,7 +188,8 @@ public class UserService {
         }
 
         String cleanedName = StringUtils.cleanPath(
-                file.getOriginalFilename() == null ? "profile" : file.getOriginalFilename()).replace(" ", "_");
+                file.getOriginalFilename() == null ? "profile" : file.getOriginalFilename()
+        ).replace(" ", "_");
         String savedFileName = UUID.randomUUID() + "_" + cleanedName;
         Path target = profileDir.resolve(savedFileName);
 
@@ -208,11 +207,9 @@ public class UserService {
     }
 
     private String getFileExtension(String fileName) {
-        if (fileName == null)
-            return "";
+        if (fileName == null) return "";
         int idx = fileName.lastIndexOf('.');
-        if (idx < 0 || idx == fileName.length() - 1)
-            return "";
+        if (idx < 0 || idx == fileName.length() - 1) return "";
         return fileName.substring(idx + 1).toLowerCase();
     }
 
@@ -298,8 +295,7 @@ public class UserService {
 
         // 5. 뱃지 삭제 (유저가 남긴 뱃지)
         try {
-            badgeRepository.deleteByUserId(uid); // 내 앨범에 달린 달개
-            badgeRepository.deleteByGivenUserId(uid); // 내가 남의 앨범에 남긴 달개
+            badgeRepository.deleteByUserId(uid);
         } catch (Exception e) {
             System.out.println("뱃지 삭제 스킵: " + e.getMessage());
         }
@@ -346,13 +342,6 @@ public class UserService {
             System.out.println("토큰 삭제 스킵: " + e.getMessage());
         }
 
-        // 11-1. 리프레시 토큰 삭제
-        try {
-            refreshTokenRepository.deleteByUserId(uid);
-        } catch (Exception e) {
-            System.out.println("리프레시 토큰 삭제 스킵: " + e.getMessage());
-        }
-
         // 12. 유저 설정 삭제
         try {
             userRepository.deleteSettingsByUserId(uid);
@@ -362,6 +351,9 @@ public class UserService {
 
         // 13. 유저 삭제
         userRepository.deleteByUserId(uid);
+        
+        
+
 
         // ── [이전 방식] EntityManager 네이티브 SQL ────────────────────────────────
         // JPA 세션과 무관하게 직접 SQL 실행 → 개별 실패해도 세션이 깨지지 않음
@@ -416,6 +408,7 @@ public class UserService {
     // // 여기에 설정 수정 로직을 작성하세요.
     // }
 
+
     // public UserSettingsDto getSettings(Long userId) {
     // // 여기에 설정 조회 로직을 작성하세요.
     // }
@@ -427,38 +420,38 @@ public class UserService {
     @Transactional
     public UserSettingsDto getSettings(Long userId) {
         UserSettingsEntity settings = entityManager
-                .createQuery("SELECT s FROM UserSettingsEntity s WHERE s.user.id = :userId", UserSettingsEntity.class)
-                .setParameter("userId", userId)
-                .getResultStream().findFirst()
-                .orElseGet(() -> {
-                    UserEntity user = userRepository.findById(userId)
-                            .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
-                    UserSettingsEntity newSettings = UserSettingsEntity.builder()
-                            .user(user)
-                            .pushNotification(true)
-                            .build();
-                    entityManager.persist(newSettings);
-                    return newSettings;
-                });
+            .createQuery("SELECT s FROM UserSettingsEntity s WHERE s.user.id = :userId", UserSettingsEntity.class)
+            .setParameter("userId", userId)
+            .getResultStream().findFirst()
+            .orElseGet(() -> {
+                UserEntity user = userRepository.findById(userId)
+                    .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
+                UserSettingsEntity newSettings = UserSettingsEntity.builder()
+                    .user(user)
+                    .pushNotification(true)
+                    .build();
+                entityManager.persist(newSettings);
+                return newSettings;
+            });
         return UserSettingsDto.builder()
-                .notificationEnabled(Boolean.TRUE.equals(settings.getPushNotification()))
-                .build();
+            .notificationEnabled(Boolean.TRUE.equals(settings.getPushNotification()))
+            .build();
     }
 
     @Transactional
     public UserSettingsDto updateSettings(Long userId, UserSettingsDto dto) {
         UserSettingsEntity settings = entityManager
-                .createQuery("SELECT s FROM UserSettingsEntity s WHERE s.user.id = :userId", UserSettingsEntity.class)
-                .setParameter("userId", userId)
-                .getResultStream().findFirst()
-                .orElseGet(() -> {
-                    UserEntity user = userRepository.findById(userId)
-                            .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
-                    UserSettingsEntity newSettings = UserSettingsEntity.builder()
-                            .user(user).build();
-                    entityManager.persist(newSettings);
-                    return newSettings;
-                });
+            .createQuery("SELECT s FROM UserSettingsEntity s WHERE s.user.id = :userId", UserSettingsEntity.class)
+            .setParameter("userId", userId)
+            .getResultStream().findFirst()
+            .orElseGet(() -> {
+                UserEntity user = userRepository.findById(userId)
+                    .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
+                UserSettingsEntity newSettings = UserSettingsEntity.builder()
+                    .user(user).build();
+                entityManager.persist(newSettings);
+                return newSettings;
+            });
         settings.setPushNotification(dto.isNotificationEnabled());
         return dto;
     }
