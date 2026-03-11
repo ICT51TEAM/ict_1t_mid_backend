@@ -13,6 +13,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -28,14 +29,15 @@ import lombok.NoArgsConstructor;
 public class RefreshToken {
 	
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)	
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(name = "id") // DB 컬럼명이 ID이므로 명시
 	private Long id;
 	
-	@ManyToOne(fetch = FetchType.LAZY)
+	@OneToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "user_id",referencedColumnName = "USER_ID",nullable = false)
 	private UserEntity user;
 
-	@Column(nullable = false, unique = true)
+	@Column(nullable = false)
 	private String token;
 	
 	@Column(nullable = false)

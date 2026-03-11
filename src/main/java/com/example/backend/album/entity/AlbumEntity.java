@@ -59,7 +59,7 @@ public class AlbumEntity {
     private String title;
 
     // [DB] 앨범 본문
-    @Column(name = "BODY_TEXT", columnDefinition = "CLOB")
+    @Column(name = "BODY_TEXT", nullable = false, columnDefinition = "CLOB")
     private String bodyText;
 
     // [DB] 기록 날짜 (LocalDate)
