@@ -42,7 +42,7 @@ public class CreateAlbumRequest {
     @NotNull
     private LocalDate recordDate;
 
-    // [API] 공개 범위 (PUBLIC/FRIENDS_ONLY/PRIVATE)
+    // [API] 공개 범위 (PUBLIC/FRIENDS/PRIVATE)
     @NotBlank
     private String visibility;
 
