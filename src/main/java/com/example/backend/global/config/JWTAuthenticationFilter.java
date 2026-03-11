@@ -55,6 +55,8 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
 					// 5. 시큐리티 컨텍스트에 인증 정보 저장
 					SecurityContextHolder.getContext().setAuthentication(authentication);
 					log.info("인증 성공:유저 Id{}", userId);
+				} else {
+					log.error("=== 토큰 검증 실패! validationToken이 false 반환");
 				}
 			} catch (ExpiredJwtException e) {
 				log.error("토큰 만료됨:{}", e.getMessage());
