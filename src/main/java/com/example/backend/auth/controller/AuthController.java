@@ -124,6 +124,7 @@ public class AuthController implements AuthControllerDocs {
 	    }
 	}
 
+
 	/**
 	 * [2] 회원가입 — POST /api/auth/signup
 	 */
@@ -153,6 +154,7 @@ public class AuthController implements AuthControllerDocs {
 			HttpServletResponse response) {
 		// 토큰 존재 여부 및 형식 체크
 		if (authHeader == null && !authHeader.startsWith("Bearer ")) {
+
 			return ResponseEntity.badRequest()
 					.body(Map.of("error", "유효한 인증 헤더가 필요합니다."));
 		}
@@ -180,6 +182,7 @@ public class AuthController implements AuthControllerDocs {
 		} catch (Exception e) {
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("유효하지 않은 토큰입니다.");
 		}
+
 	}
 
 	/**
@@ -283,7 +286,6 @@ public class AuthController implements AuthControllerDocs {
 		return ResponseEntity.ok("이메일을 발송했습니다");
 	}
 
-
 	/**
 	 * [7] 이메일 인증 코드 검증 — POST /api/auth/email/verify-code
 	 */
@@ -294,6 +296,7 @@ public class AuthController implements AuthControllerDocs {
 			return ResponseEntity.badRequest().body("인증 실패");
 		return ResponseEntity.ok("인증 성공");
 	}
+
 	/**
 	 * [8] 비밀번호 재설정 — POST /api/auth/reset-password
 	 */
@@ -319,10 +322,10 @@ public class AuthController implements AuthControllerDocs {
 	 */
 	@GetMapping("/email/check")
 	public ResponseEntity<Map<String, Boolean>> checkEmail(@RequestParam String email) {
-	    boolean isDuplicate = userRepository.existsByEmail(email);
-	    return ResponseEntity.ok(Map.of("isDuplicate", isDuplicate));
+		boolean isDuplicate = userRepository.existsByEmail(email);
+		return ResponseEntity.ok(Map.of("isDuplicate", isDuplicate));
 	}
-	
+
 	/**
 	 * [11] Access Token 재발급 — POST /api/auth/refresh
 	 */
@@ -393,7 +396,7 @@ public class AuthController implements AuthControllerDocs {
 
 
 	}
-	
+
 	/**
 	 * [12] Token 정보 조회 — GET /api/auth/token-info
 	 */
@@ -408,13 +411,11 @@ public class AuthController implements AuthControllerDocs {
 			response.put("statue", "AUTHENTICATED");
 
 			return ResponseEntity.ok(response);
-		}
-		catch(Exception e) {
+		} catch (Exception e) {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(Map.of("error", "Token 정보 조회 중 오류가 발생했습니다."));	
+					.body(Map.of("error", "Token 정보 조회 중 오류가 발생했습니다."));
 		}
-		
+
 	}
 
-	
 }
