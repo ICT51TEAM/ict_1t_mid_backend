@@ -341,7 +341,12 @@ public class AuthController implements AuthControllerDocs {
 		try {
 			// db에서 토큰 검증
 			RefreshToken dbToken = refreshTokenRepository.findByToken(refreshToken)
-					.orElseThrow(() -> new RuntimeException("DB에 Token이 없습니다"));
+					.orElseThrow(() -> null);
+			
+			if (dbToken == null) {
+			    return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+			            .body(Map.of("error", "존재하지 않는 리프레시 토큰입니다. 다시 로그인하세요."));
+			}
 			
 			// 기간 만료 확인
 			if(dbToken.getExpiryDate().isBefore(LocalDateTime.now())) {
