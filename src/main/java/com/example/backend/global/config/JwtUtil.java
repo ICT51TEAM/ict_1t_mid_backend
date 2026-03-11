@@ -28,7 +28,7 @@ public class JwtUtil {
 	public JwtUtil(@Value("${jwt.secret}") String secretKey,
 			@Value("${jwt.expiration-ms}") long jwtExpirationMs) {
 
-		System.out.println("=== JWT Secret 앞 10자: " + secretKey.substring(0, Math.min(10, secretKey.length())));
+		//System.out.println("=== JWT Secret 앞 10자: " + secretKey.substring(0, Math.min(10, secretKey.length())));
 
 		// ※Base64 인코딩된 키 생성
 		// ※환경변수 등록키와 연동
