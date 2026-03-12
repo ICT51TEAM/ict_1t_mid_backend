@@ -194,6 +194,7 @@ public class AlbumService {
         for (AlbumEntity album : albums) {
             Long authorId = album.getUser() == null ? null : album.getUser().getId();
             String vis = album.getVisibility();
+            boolean isOwner = Objects.equals(authorId, currentUserId);
 
             if ("FRIENDS".equalsIgnoreCase(visibility)) {
                 // 글벗: PUBLIC 또는 FRIENDS 공개 + 실제 팔로우 관계인 사람 글만
@@ -202,16 +203,21 @@ public class AlbumService {
                 if (!followingIds.contains(authorId))
                     continue;
 
+            } else if ("MINE".equalsIgnoreCase(visibility)) {
+                // 나만 탭: 공개범위와 무관하게 내 글 전체
+                if (!isOwner)
+                    continue;
+
             } else if ("PRIVATE".equalsIgnoreCase(visibility)) {
-                // 나만: PRIVATE + 내 글만
+                // PRIVATE 필터: PRIVATE + 내 글만
                 if (!"PRIVATE".equalsIgnoreCase(vis))
                     continue;
-                if (!Objects.equals(authorId, currentUserId))
+                if (!isOwner)
                     continue;
 
             } else {
-                // 전체: PUBLIC만
-                if (!"PUBLIC".equalsIgnoreCase(vis))
+                // 전체: 다른 사람 글은 PUBLIC만, 본인 글은 공개범위와 무관하게 포함
+                if (!"PUBLIC".equalsIgnoreCase(vis) && !isOwner)
                     continue;
             }
 
