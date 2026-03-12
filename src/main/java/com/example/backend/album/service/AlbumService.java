@@ -184,7 +184,7 @@ public class AlbumService {
 
         // 글벗 탭: 내가 팔로우하는 사람 ID 목록 미리 조회
         Set<Long> followingIds = new HashSet<>();
-        if ("FRIENDS".equals(visibility) && currentUserId != null) {
+        if ("FRIENDS".equalsIgnoreCase(visibility) && currentUserId != null) {
             followingIds = friendshipRepository.findFollowingIdsByUserId(currentUserId);
         }
 
@@ -195,14 +195,14 @@ public class AlbumService {
             Long authorId = album.getUser() == null ? null : album.getUser().getId();
             String vis = album.getVisibility();
 
-            if ("FRIENDS".equals(visibility)) {
-                // 글벗: FRIENDS 공개 + 실제 팔로우 관계인 사람 글만
-                if (!"FRIENDS".equalsIgnoreCase(vis))
+            if ("FRIENDS".equalsIgnoreCase(visibility)) {
+                // 글벗: PUBLIC 또는 FRIENDS 공개 + 실제 팔로우 관계인 사람 글만
+                if (!"PUBLIC".equalsIgnoreCase(vis) && !"FRIENDS".equalsIgnoreCase(vis))
                     continue;
                 if (!followingIds.contains(authorId))
                     continue;
 
-            } else if ("PRIVATE".equals(visibility)) {
+            } else if ("PRIVATE".equalsIgnoreCase(visibility)) {
                 // 나만: PRIVATE + 내 글만
                 if (!"PRIVATE".equalsIgnoreCase(vis))
                     continue;
