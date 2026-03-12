@@ -28,23 +28,16 @@ public class FriendController implements FriendControllerDocs {
     private final UserRepository userRepository;
 
     // JWT 토큰에서 userId 추출
-    private Long getUserIdFromToken(HttpServletRequest request) {
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new IllegalArgumentException("인증 토큰이 없습니다.");
+    private Long getUserIdFromToken(Authentication authentication) {
+        if (authentication == null || authentication.getPrincipal() == null) {
+            return null;
         }
-        String token = authHeader.substring(7);
-        return jwtUtil.getUserIdFromToken(token);
-    }
-
-    // JWT 토큰에서 email 추출
-    private String getEmailFromToken(HttpServletRequest request) {
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new IllegalArgumentException("인증 토큰이 없습니다.");
+        try {
+            // 현재 보안 컨텍스트에 저장된 Principal(251 등)을 Long으로 변환
+            return Long.valueOf(authentication.getPrincipal().toString());
+        } catch (Exception e) {
+            return null;
         }
-        String token = authHeader.substring(7);
-        return jwtUtil.getUserEmailFromToken(token);
     }
 
     // 1. 내 친구 목록 조회
@@ -64,18 +57,25 @@ public class FriendController implements FriendControllerDocs {
     // 2. 받은 친구 요청 목록 조회
     @GetMapping("/pending")
     public ResponseEntity<List<FriendResponseDto>> getPendingRequests(
-            @AuthenticationPrincipal Long userId) {
+    		Authentication authentication) {
+    	Long userId = getUserIdFromToken(authentication);
         return ResponseEntity.ok(friendService.listPendingRequests(userId));
     }
 
     // 3. 상대방에게 친구요청 발송
     @PostMapping("/request")
     public ResponseEntity<String> sendFriendRequest(
-            @AuthenticationPrincipal Long userId,
+    		Authentication authentication,
             @RequestBody FriendRequestDto requestDto) {
-    	System.out.println("userId:"+userId);
-        friendService.sendRequest(userId, requestDto.getTargetUserId());
-        return ResponseEntity.ok("친구 요청을 성공적으로 발송했습니다.");
+    	Long userId = getUserIdFromToken(authentication);
+    	
+        try {
+            friendService.sendRequest(userId, requestDto.getTargetUserId());
+            return ResponseEntity.ok("성공");
+        } catch (IllegalArgumentException e) {
+            // 500 대신 400(Bad Request)을 반환하여 로직상 거부됨을 명시
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
     
     // 내가 보낸 친구 요청 중 아직 수락 대기 중인 목록 조회(추가)
@@ -109,8 +109,11 @@ public class FriendController implements FriendControllerDocs {
     // 4. 특정된 친구 요청 수락 처리
     @PostMapping("/{friendshipId}/accept")
     public ResponseEntity<String> acceptFriendRequest(
-            @AuthenticationPrincipal Long userId,
+    		Authentication authentication,
             @PathVariable Long friendshipId) {
+    	Long userId = getUserIdFromToken(authentication);
+        if (userId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        
         friendService.acceptRequest(friendshipId, userId);
         return ResponseEntity.ok("친구 요청을 수락했습니다");
     }
@@ -118,8 +121,11 @@ public class FriendController implements FriendControllerDocs {
     // 5. 특정된 친구 요청 거절 처리
     @PostMapping("/{friendshipId}/reject")
     public ResponseEntity<String> rejectFriendRequest(
-            @AuthenticationPrincipal Long userId,
+    		Authentication authentication,
             @PathVariable Long friendshipId) {
+    	Long userId = getUserIdFromToken(authentication);
+        if (userId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        
         friendService.rejectRequest(friendshipId, userId);
         return ResponseEntity.ok("친구 요청을 거절했습니다");
     }
@@ -128,7 +134,10 @@ public class FriendController implements FriendControllerDocs {
     @DeleteMapping("/{friendId}")
     public ResponseEntity<String> deleteFriend(
             @PathVariable Long friendId,
-            @AuthenticationPrincipal Long userId) {
+            Authentication authentication) {
+    	Long userId = getUserIdFromToken(authentication);
+        if (userId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        
         friendService.removeFriend(friendId, userId);
         return ResponseEntity.ok("친구 관계를 삭제했습니다");
     }
@@ -137,7 +146,11 @@ public class FriendController implements FriendControllerDocs {
     @GetMapping("/search")
     public ResponseEntity<List<UserSearchDto>> searchUsers(
             @RequestParam("q") String query,
-            @AuthenticationPrincipal Long userId) {
+            Authentication authentication) {
+        
+        Long userId = getUserIdFromToken(authentication);
+        if (userId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        
         List<UserSearchDto> userList = friendService.searchUsers(query, userId);
         return ResponseEntity.ok(userList);
     }

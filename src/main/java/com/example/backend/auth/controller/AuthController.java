@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -75,6 +76,7 @@ public class AuthController implements AuthControllerDocs {
 	 * [1] 로그인 — POST /api/auth/login
 	 */
 	@PostMapping("/login")
+	@Transactional
 	public ResponseEntity<?> login(@RequestBody LoginRequestDto credentials, HttpServletResponse response) {
 	    // 1. 서비스 호출 및 인증 확인
 	    Boolean isLogin = authService.isAuthenticated(credentials.getEmail(), credentials.getPassword());
@@ -129,6 +131,7 @@ public class AuthController implements AuthControllerDocs {
 	 * [2] 회원가입 — POST /api/auth/signup
 	 */
 	@PostMapping("/signup")
+	@Transactional
 	public ResponseEntity<Map<String, String>> signup(@Valid @RequestBody SignupRequestDto requestDto) {
 		// 서비스 호출
 		// 1. DTO로 받기
@@ -149,6 +152,7 @@ public class AuthController implements AuthControllerDocs {
 	 */
 
 	@PostMapping("/logout")
+	@Transactional
 	public ResponseEntity<?> logout(
 			@RequestHeader(value = "Authorization", required = false) String authHeader,
 			HttpServletResponse response) {
@@ -189,6 +193,7 @@ public class AuthController implements AuthControllerDocs {
 	 * [4] 카카오 로그인 — POST /api/auth/kakao/login
 	 */
 	@PostMapping("/kakao/login")
+	@Transactional
 	public ResponseEntity<?> kakaoLogin(@RequestBody KakaoLoginDto dto, HttpSession session) {
 	    // 1. 서비스 호출 및 유저 정보/신규 여부 추출
 	    Map<String, Object> loginResult = kakaoService.processKakaoLogin(dto.getKakaoId(), dto.getUsername());
@@ -244,6 +249,7 @@ public class AuthController implements AuthControllerDocs {
 	 * [5] 이메일 인증 코드 발송 — POST /api/auth/email/send-code
 	 */
 	@PostMapping("/email/send-code")
+	@Transactional
 	public ResponseEntity<?> sendEmailCode(@RequestBody EmailRequestDto requestDto) {
 		String email = requestDto.getEmail();
 
@@ -262,6 +268,7 @@ public class AuthController implements AuthControllerDocs {
 	 */
 
 	@PostMapping("/email/send-reset-code")
+	@Transactional
 	public ResponseEntity<?> sendResetEmailCode(@RequestBody EmailRequestDto requestDto) {
 		String email = requestDto.getEmail();
 		Optional<UserEntity> optionalUser = userRepository.findByEmail(email);
@@ -290,6 +297,7 @@ public class AuthController implements AuthControllerDocs {
 	 * [7] 이메일 인증 코드 검증 — POST /api/auth/email/verify-code
 	 */
 	@PostMapping("/email/verify-code")
+	@Transactional
 	public ResponseEntity<?> verifyEmailCode(@RequestBody EmailVerifyDto requestDto) {
 		boolean isAuth = authService.verifyEmailCode(requestDto.getEmail(), requestDto.getCode());
 		if (!isAuth)
@@ -301,6 +309,7 @@ public class AuthController implements AuthControllerDocs {
 	 * [8] 비밀번호 재설정 — POST /api/auth/reset-password
 	 */
 	@PostMapping("/reset-password")
+	@Transactional
 	public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordDto request) {
 		authService.resetPassword(request.getEmail(), request.getNewPassword());
 		return ResponseEntity.ok("비밀번호가 변경되었습니다.");
@@ -310,6 +319,7 @@ public class AuthController implements AuthControllerDocs {
 	 * [9] 인증코드 검증 — POST /api/email/verify-reset-code
 	 */
 	@PostMapping("/email/verify-reset-code")
+	@Transactional
 	public ResponseEntity<?> verifyResetCode(@RequestBody EmailVerifyDto requestDto) {
 		boolean isAuth = authService.verifyResetCode(requestDto.getEmail(), requestDto.getCode());
 		if (!isAuth)
@@ -321,6 +331,7 @@ public class AuthController implements AuthControllerDocs {
 	 * [10] 이메일 중복여부 체크 — POST /api/email/check
 	 */
 	@GetMapping("/email/check")
+	@Transactional
 	public ResponseEntity<Map<String, Boolean>> checkEmail(@RequestParam String email) {
 		boolean isDuplicate = userRepository.existsByEmail(email);
 		return ResponseEntity.ok(Map.of("isDuplicate", isDuplicate));
@@ -330,6 +341,7 @@ public class AuthController implements AuthControllerDocs {
 	 * [11] Access Token 재발급 — POST /api/auth/refresh
 	 */
 	@PostMapping("/refresh")
+	@Transactional
 	public ResponseEntity<?> refresh(@CookieValue(value = "refreshToken", required = false) String refreshToken) {
 
 	    // 1. refreshToken 존재 여부 확인
@@ -380,7 +392,7 @@ public class AuthController implements AuthControllerDocs {
 	        // 7. 새 리프레시 토큰을 쿠키에 설정
 	        ResponseCookie newCookie = ResponseCookie.from("refreshToken", newRefreshToken)
 	                .httpOnly(true)
-	                .secure(false) // HTTPS 운영 환경에서는 true로 변경 권장
+	                .secure(false)
 	                .path("/")
 	                .maxAge(7 * 24 * 60 * 60)
 	                .sameSite("Lax")
@@ -389,6 +401,7 @@ public class AuthController implements AuthControllerDocs {
 	        return ResponseEntity.ok()
 	        		.header("Set-Cookie", newCookie.toString())
 	        		.body(Map.of("accessToken", newAccessToken));
+
 	    } catch (Exception e) {
 	    	return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 	        		.body(Map.of("error", "서버 오류가 발생했습니다: " + e.getMessage()));
@@ -401,6 +414,7 @@ public class AuthController implements AuthControllerDocs {
 	 * [12] Token 정보 조회 — GET /api/auth/token-info
 	 */
 	@GetMapping("/token-info")
+	@Transactional 
 	public ResponseEntity<?> getToken(Authentication authentication) {
 			// 필터에서 저장한 userId 추출
 		try {
