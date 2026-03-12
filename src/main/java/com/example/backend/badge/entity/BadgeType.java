@@ -55,6 +55,6 @@ public class BadgeType {
     @Column(name = "DESCRIPTION", length = 500)
     private String description;
 
-    @Column(name = "SORT_ORDER" )
+    @Column(name = "SORT_ORDER", nullable = false )
     private int sortOrder;
 }

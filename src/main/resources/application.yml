@@ -17,6 +17,7 @@ logging:
     org.hibernate.SQL: DEBUG
     org.springframework.security.oauth2: TRACE
     org.springframework.web.client.RestTemplate: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE
 
 spring:
   servlet:
@@ -41,7 +42,7 @@ spring:
     driver-class-name: oracle.jdbc.OracleDriver
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: none  
     show-sql: true
     properties:
       hibernate:
@@ -82,3 +83,4 @@ springdoc:
 app:
   upload:
     dir: uploads
+

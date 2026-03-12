@@ -3,6 +3,7 @@ package com.example.backend.auth.service;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -102,7 +103,7 @@ public class AuthService {
 	// - 일치: 토큰 생성 (UUID 기반 등) + AuthResponseDto 반환
 	// - 불일치: RuntimeException("이메일 또는 비밀번호가 일치하지 않습니다")
 	// [로그인] 회원여부 및 비번 조회
-	@Transactional
+	@Transactional(readOnly = false)
 	public AuthResponseDto login(String email, String password) {
 		
 		// <회원 여부 조회> : 엔티티에서 이메일 조회
@@ -118,6 +119,7 @@ public class AuthService {
 		String userEmail = user.getEmail();
 		
 		String refreshTokenValue = jwtUtil.createRefreshToken(userId, userEmail);
+		String accessToken = jwtUtil.createToken(user.getId(), user.getEmail());
 		LocalDateTime expiryDate = LocalDateTime.now().plusDays(7);
 		
 		// 기존 유저의 리프레쉬 토큰 존애 여부
@@ -127,6 +129,10 @@ public class AuthService {
 					existingToken -> {
 						System.out.println("기존 토큰 업데이트 실행"); // 로그 확인용
 		                existingToken.update(refreshTokenValue, expiryDate);
+		                
+		             // 핵심: 변경된 엔티티를 명시적으로 저장하고 즉시 반영(flush)
+		                refreshTokenRepository.save(existingToken);
+		                refreshTokenRepository.flush();
 					}, 
 					// 없는 경우
 					() -> {
@@ -157,7 +163,34 @@ public class AuthService {
 		
 		return response;
 	}
-
+/*
+	// ✅ [새로운 메서드] 리프레시 토큰 저장/업데이트 로직 분리
+		@Transactional(readOnly = false)
+		 private void saveOrUpdateRefreshTokenInTransaction(UserEntity user, String refreshTokenValue, LocalDateTime expiryDate2) {
+	        LocalDateTime expiryDate = LocalDateTime.now().plusDays(7);
+	        
+	        Optional<RefreshToken> existingToken = refreshTokenRepository.findByUserId(user.getId());
+	        
+	        if (existingToken.isPresent()) {
+	            // 기존 토큰 업데이트
+	            RefreshToken token = existingToken.get();
+	            token.update(refreshTokenValue, expiryDate);
+	            // ✅ saveAndFlush() 사용!
+	            refreshTokenRepository.saveAndFlush(token);
+	            System.out.println("✅ 기존 리프레시 토큰 업데이트: User " + user.getId());
+	        } else {
+	            // 신규 토큰 생성
+	            RefreshToken newToken = RefreshToken.builder()
+	                    .user(user)
+	                    .token(refreshTokenValue)
+	                    .expiryDate(expiryDate)
+	                    .build();
+	            // ✅ saveAndFlush() 사용!
+	            refreshTokenRepository.saveAndFlush(newToken);
+	            System.out.println("✅ 신규 리프레시 토큰 생성: User " + user.getId());
+	        }
+	    }
+*/
 	// [회원 인증 여부 판단]
 	public Boolean isAuthenticated(String email, String inputPassword) {
 		// 이메일로 사용자만 먼저 조회
@@ -280,19 +313,35 @@ public class AuthService {
 	}
 	
 	@Transactional
-	public String refreshAccessToken(String refreshTokenValue) {
+	public Map<String, Object> refreshAccessToken(String refreshTokenValue) {
 		// db에서 해당 리프레쉬 토큰 찾기
-		RefreshToken refreshToken = refreshTokenRepository.findByToken(refreshTokenValue)
+		RefreshToken dbToken = refreshTokenRepository.findByToken(refreshTokenValue)
 				.orElseThrow(()-> new RuntimeException("유효하지 않은 리프레시 토큰입니다."));
-		//만료 시간 체크
-		if(refreshToken.getExpiryDate().isBefore(LocalDateTime.now())) {
-			//만료시 db에서 삭제 후 에러 던지기
-			refreshTokenRepository.delete(refreshToken);
-			throw new RuntimeException("리프레시 토큰이 만료되었습니다. 다시 로그인해주세요");
-		}
+		
+		//  만료 체크
+	    if (dbToken.getExpiryDate().isBefore(LocalDateTime.now())) {
+	        refreshTokenRepository.delete(dbToken);
+	        throw new RuntimeException("리프레시 토큰이 만료되었습니다.");
+	    }
+
+	    //  새로운 토큰들 생성
+	    UserEntity user = dbToken.getUser();
+	    String newAccessToken = jwtUtil.createToken(user.getId(), user.getEmail());
+	    String newRefreshToken = jwtUtil.createRefreshToken(user.getId(), user.getEmail());
+
+	    //  DB 업데이트 (Dirty Checking에 의해 자동 저장됨)
+	    dbToken.update(newRefreshToken, LocalDateTime.now().plusDays(7));
+	    refreshTokenRepository.saveAndFlush(dbToken);
+	    
+	    //  결과 반환
+	    Map<String, Object> result = new HashMap<>();
+	    result.put("accessToken", newAccessToken);
+	    result.put("refreshToken", newRefreshToken);
+	    result.put("user", UserProfileDto.from(user)); // 프론트엔드 setUser를 위해 추가
+	    
 		// 토큰이 유효한 경우 신규 access토큰 발급
-		UserEntity user = refreshToken.getUser();
-		return jwtUtil.createToken(user.getId(), user.getEmail());
+	
+		return result;
 		
 		
 	}
