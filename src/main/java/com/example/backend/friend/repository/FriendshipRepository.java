@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public interface FriendshipRepository extends JpaRepository<Friendship, Long> {
 
@@ -28,4 +29,11 @@ public interface FriendshipRepository extends JpaRepository<Friendship, Long> {
     @Modifying
     @Query("DELETE FROM Friendship f WHERE f.fromUser.id = :userId OR f.toUser.id = :userId")
     void deleteAllByUserId(@Param("userId") Long userId);
+
+    @Query("SELECT f FROM Friendship f WHERE f.fromUser = :user AND f.status = 'PENDING'")
+    List<Friendship> findSentPendingRequests(@Param("user") UserEntity user);
+
+    @Query("SELECT CASE WHEN f.fromUser.id = :userId THEN f.toUser.id ELSE f.fromUser.id END " +
+            "FROM Friendship f WHERE (f.fromUser.id = :userId OR f.toUser.id = :userId) AND f.status = 'ACCEPTED'")
+    Set<Long> findFollowingIdsByUserId(@Param("userId") Long userId);
 }

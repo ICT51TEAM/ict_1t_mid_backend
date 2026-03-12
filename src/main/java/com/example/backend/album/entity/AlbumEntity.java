@@ -59,14 +59,14 @@ public class AlbumEntity {
     private String title;
 
     // [DB] 앨범 본문
-    @Column(name = "BODY_TEXT", columnDefinition = "CLOB")
+    @Column(name = "BODY_TEXT", nullable = false, columnDefinition = "CLOB")
     private String bodyText;
 
     // [DB] 기록 날짜 (LocalDate)
     @Column(name = "RECORD_DATE", nullable = false)
     private LocalDate recordDate;
 
-    // [DB] 공개 범위 (PUBLIC/FRIENDS_ONLY/PRIVATE)
+    // [DB] 공개 범위 (PUBLIC/FRIENDS/PRIVATE)
     @Column(name = "VISIBILITY", nullable = false, length = 20)
     private String visibility;
 
