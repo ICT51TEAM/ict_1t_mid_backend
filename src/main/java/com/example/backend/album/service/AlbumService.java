@@ -1,6 +1,7 @@
 package com.example.backend.album.service;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -8,6 +9,7 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.Objects;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.access.AccessDeniedException;
@@ -29,6 +31,7 @@ import com.example.backend.albumtag.repository.AlbumTagRepository;
 import com.example.backend.badge.dto.AlbumDalgaeDto;
 import com.example.backend.badge.repository.BadgeRepository;
 import com.example.backend.badge.service.BadgeService;
+import com.example.backend.friend.repository.FriendshipRepository;
 import com.example.backend.photo.entity.PhotoEntity;
 import com.example.backend.photo.repository.PhotoRepository;
 import com.example.backend.tag.entity.Tag;
@@ -72,6 +75,7 @@ public class AlbumService {
     private final JdbcTemplate jdbcTemplate;
     private final BadgeService badgeService;
     private final BadgeRepository badgeRepository;
+    private final FriendshipRepository friendshipRepository;
 
     // [BACK][API]
     // - 어디서 호출? : AlbumController.createAlbum()
@@ -170,19 +174,45 @@ public class AlbumService {
     // - 입력값 : type(photo/text/all), friendsOnly, tag
     // - 출력값 : 피드 카드 목록
     @Transactional(readOnly = true)
-    public List<AlbumFeedItemResponse> getAlbumFeed(String type, Boolean friendsOnly, String tag) {
-        // [BACK] 현재 앨범 피드는 사진형(photo)만 지원합니다.
+    public List<AlbumFeedItemResponse> getAlbumFeed(String type, String visibility, String tag,
+            Authentication authentication) {
         if (!isSupportedFeedType(type)) {
             return List.of();
+        }
+
+        Long currentUserId = authentication != null ? Long.valueOf(authentication.getName()) : null;
+
+        // 글벗 탭: 내가 팔로우하는 사람 ID 목록 미리 조회
+        Set<Long> followingIds = new HashSet<>();
+        if ("FRIENDS".equalsIgnoreCase(visibility) && currentUserId != null) {
+            followingIds = friendshipRepository.findFollowingIdsByUserId(currentUserId);
         }
 
         List<AlbumEntity> albums = albumRepository.findAllByOrderByCreatedAtDesc();
         List<AlbumFeedItemResponse> result = new ArrayList<>();
 
         for (AlbumEntity album : albums) {
-            // [BACK] friendsOnly=true일 때는 private 앨범을 제외합니다.
-            if (Boolean.TRUE.equals(friendsOnly) && "PRIVATE".equalsIgnoreCase(album.getVisibility())) {
-                continue;
+            Long authorId = album.getUser() == null ? null : album.getUser().getId();
+            String vis = album.getVisibility();
+
+            if ("FRIENDS".equalsIgnoreCase(visibility)) {
+                // 글벗: PUBLIC 또는 FRIENDS 공개 + 실제 팔로우 관계인 사람 글만
+                if (!"PUBLIC".equalsIgnoreCase(vis) && !"FRIENDS".equalsIgnoreCase(vis))
+                    continue;
+                if (!followingIds.contains(authorId))
+                    continue;
+
+            } else if ("PRIVATE".equalsIgnoreCase(visibility)) {
+                // 나만: PRIVATE + 내 글만
+                if (!"PRIVATE".equalsIgnoreCase(vis))
+                    continue;
+                if (!Objects.equals(authorId, currentUserId))
+                    continue;
+
+            } else {
+                // 전체: PUBLIC만
+                if (!"PUBLIC".equalsIgnoreCase(vis))
+                    continue;
             }
 
             List<String> tags = albumTagRepository.findByAlbum_IdOrderByIdAsc(album.getId())
@@ -191,10 +221,8 @@ public class AlbumService {
                     .filter(tagName -> tagName != null && !tagName.isBlank())
                     .collect(Collectors.toList());
 
-            // [BACK] 태그 검색어가 있으면 태그 목록에 포함된 앨범만 반환합니다.
-            if (!matchesTagFilter(tag, tags)) {
+            if (!matchesTagFilter(tag, tags))
                 continue;
-            }
 
             String coverImageUrl = albumPhotoRepository.findFirstByAlbum_IdOrderBySlotIndexAsc(album.getId())
                     .map(link -> link.getPhoto() == null ? null : link.getPhoto().getPhotoUrl())
@@ -207,7 +235,7 @@ public class AlbumService {
                     .imageUrl(coverImageUrl)
                     .title(album.getTitle())
                     .author(album.getUser() == null ? "알수없음" : album.getUser().getUsername())
-                    .authorId(album.getUser() == null ? null : album.getUser().getId())
+                    .authorId(authorId)
                     .preview(album.getBodyText() == null ? "" : album.getBodyText())
                     .tags(tags)
                     .badges(List.of())
@@ -526,8 +554,7 @@ public class AlbumService {
 
         throw new IllegalArgumentException("layoutType 허용값: " + String.join(", ", dbCodes));
     }
-    
-    
+
     // [BACK][API]
     // - 어디서 호출? : AlbumController.updateAlbum()
     // - 입력값 : albumId, title, bodyText, visibility, authentication
@@ -579,47 +606,46 @@ public class AlbumService {
     }
 
     // 글벗의 최신 게시글 조회
-	public LatestFrinendAlbumDto getLatestFriendStory(Long myId,Boolean friendsOnly,String tag) {
-		// [BACK] 현재 앨범 피드는 사진형(photo)만 지원합니다.
+    public LatestFrinendAlbumDto getLatestFriendStory(Long myId, Boolean friendsOnly, String tag) {
+        // [BACK] 현재 앨범 피드는 사진형(photo)만 지원합니다.
         if (!isSupportedFeedType("photo")) {
             return null;
         }
-		// 모든 앨범을 최신순으로 가져 오기
-		List<AlbumEntity> albums = albumRepository.findAllByOrderByCreatedAtDesc();
+        // 모든 앨범을 최신순으로 가져 오기
+        List<AlbumEntity> albums = albumRepository.findAllByOrderByCreatedAtDesc();
 
         for (AlbumEntity album : albums) {
-        	// 내가 작성한 
+            // 내가 작성한
             // [BACK] friendsOnly=true일 때는 private 앨범을 제외합니다.
             if (Boolean.TRUE.equals(friendsOnly) && "PRIVATE".equalsIgnoreCase(album.getVisibility())) {
                 continue;
             }
 
-		List<String> tags = albumTagRepository.findByAlbum_IdOrderByIdAsc(album.getId())
-		                    .stream()
-		                    .map(link -> link.getTag() == null ? null : link.getTag().getName())
-		                    .filter(tagName -> tagName != null && !tagName.isBlank())
-		                    .collect(Collectors.toList());
+            List<String> tags = albumTagRepository.findByAlbum_IdOrderByIdAsc(album.getId())
+                    .stream()
+                    .map(link -> link.getTag() == null ? null : link.getTag().getName())
+                    .filter(tagName -> tagName != null && !tagName.isBlank())
+                    .collect(Collectors.toList());
 
-		// [BACK] 태그 검색어가 있으면 태그 목록에 포함된 앨범만 반환합니다.
-		if (!matchesTagFilter(tag, tags)) {
-		               continue;
-		 }
+            // [BACK] 태그 검색어가 있으면 태그 목록에 포함된 앨범만 반환합니다.
+            if (!matchesTagFilter(tag, tags)) {
+                continue;
+            }
 
-		String coverImageUrl = albumPhotoRepository.findFirstByAlbum_IdOrderBySlotIndexAsc(album.getId())
-		                    .map(link -> link.getPhoto() == null ? null : link.getPhoto().getPhotoUrl())
-		                    .orElse(null);
+            String coverImageUrl = albumPhotoRepository.findFirstByAlbum_IdOrderBySlotIndexAsc(album.getId())
+                    .map(link -> link.getPhoto() == null ? null : link.getPhoto().getPhotoUrl())
+                    .orElse(null);
 
-		return LatestFrinendAlbumDto.builder()
-						.postId(album.getId())
-						.albumId(album.getId())
-						.title(album.getTitle())
-						.author(album.getUser() == null ? "알수없음" : album.getUser().getUsername())
-		                .authorBadge(album.getUser() != null ? "📝" : "👤" )
-		                .date(album.getRecordDate() == null ? "" : album.getRecordDate().toString())
-		                .build();
-		        }
+            return LatestFrinendAlbumDto.builder()
+                    .postId(album.getId())
+                    .albumId(album.getId())
+                    .title(album.getTitle())
+                    .author(album.getUser() == null ? "알수없음" : album.getUser().getUsername())
+                    .authorBadge(album.getUser() != null ? "📝" : "👤")
+                    .date(album.getRecordDate() == null ? "" : album.getRecordDate().toString())
+                    .build();
+        }
 
-		        return null;
-		    }
+        return null;
+    }
 }
-
