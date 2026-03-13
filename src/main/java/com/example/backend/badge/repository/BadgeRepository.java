@@ -99,6 +99,11 @@ public interface BadgeRepository extends JpaRepository<Badge, Long> {
 	 * ) long countDistinctBadgeTypesByUserId(@Param("userId") Long userId);
 	 */
 
+	// 전체 글에 부여된 달개를 유형별로 집계 (전체 통계용)
+	@Query("SELECT new com.example.backend.badge.dto.BadgeCountMappingDto(b.badgeType.id, COUNT(b)) "
+			+ "FROM Badge b GROUP BY b.badgeType.id")
+	List<BadgeCountMappingDto> countAllGroupByTypeId();
+
 	// 유저와 관련된 모든 달개(앨범달개, 게시글달개) 일괄 삭제
 	@Modifying
 	@Query("DELETE FROM Badge b WHERE b.album.user.id = :userId")

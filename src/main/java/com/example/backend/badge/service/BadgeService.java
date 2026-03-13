@@ -195,6 +195,31 @@ public class BadgeService {
 
 
 
+    // 전체 글에 부여된 달개 통계 (글로벌)
+    @Transactional(readOnly = true)
+    public BadgeStatsDto getGlobalBadgeStats() {
+        List<BadgeCountMappingDto> results = badgeRepository.countAllGroupByTypeId();
+        Map<Long, Long> countMap = results.stream()
+                .collect(Collectors.toMap(
+                        BadgeCountMappingDto::getTypeId,
+                        BadgeCountMappingDto::getCount));
+        List<BadgeType> allBadgeTypes = badgeTypeRepository.findAll();
+        List<BadgeStatsDto.TypeCountDto> badgeTypeCount = allBadgeTypes.stream()
+                .map(type -> BadgeStatsDto.TypeCountDto.builder()
+                        .typeName(type.getName())
+                        .emoji(type.getEmoji())
+                        .count(countMap.getOrDefault(type.getId(), 0L).intValue())
+                        .build())
+                .collect(Collectors.toList());
+        int totalBadgeCount = badgeTypeCount.stream()
+                .mapToInt(BadgeStatsDto.TypeCountDto::getCount)
+                .sum();
+        return BadgeStatsDto.builder()
+                .totalCount(totalBadgeCount)
+                .typeCounts(badgeTypeCount)
+                .build();
+    }
+
     // ── 앨범 달개 부여/취소 (토글) ──
 
     /**
