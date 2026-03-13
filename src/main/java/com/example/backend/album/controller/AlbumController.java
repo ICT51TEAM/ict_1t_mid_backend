@@ -170,7 +170,7 @@ public class AlbumController {
                 }
         }
 
-    }
+    
 
     // [BACK][API]
     // - 어디서 호출? : frontend postService.updatePost()
@@ -216,7 +216,7 @@ public class AlbumController {
                             .build());
 
         }
-
+    }
         // [BACK][API]
         // - 어디서 호출? : frontend postService.deletePost()
         // - 입력값 : albumId(PathVariable), Authentication
