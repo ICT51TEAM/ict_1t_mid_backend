@@ -172,7 +172,7 @@ public class FriendService {
         public List<UserSearchDto> searchUsers(String query, Long userId) {
                 UserEntity currentUser = userRepository.findById(userId)
                                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
-                List<UserEntity> userList = userRepository.findByUsernameContaining(query);
+                List<UserEntity> userList = userRepository.searchByUsernameIgnoreCaseExcludePrivate(query);
                 return userList.stream()
                                 .filter(user -> !user.getId().equals(currentUser.getId()))
                                 .map(user -> {

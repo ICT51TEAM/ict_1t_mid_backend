@@ -153,6 +153,16 @@ public class BadgeController implements BadgeControllerDocs {
     }//////
 
     /**
+     * [5-1] 전체 글 달개 통계 — GET /api/badges/stats/global
+     */
+    @Operation(summary = "전체 달개 통계 조회", description = "모든 글에 부여된 달개의 총 개수와 종류별 개수를 조회합니다")
+    @GetMapping("/stats/global")
+    public ResponseEntity<BadgeStatsDto> getGlobalBadgeStats() {
+        BadgeStatsDto stats = badgeService.getGlobalBadgeStats();
+        return ResponseEntity.ok(stats);
+    }
+
+    /**
      * [5] 전체 달개 유형 목록 — GET /api/badges/types
      * 
      * @return List<BadgeTypeDto>
