@@ -79,10 +79,11 @@ public class AlbumController {
     @GetMapping("/feed")
     public ResponseEntity<?> getAlbumFeed(
             @RequestParam(required = false) String type,
-            @RequestParam(required = false) Boolean friendsOnly,
-            @RequestParam(required = false) String tag) {
+            @RequestParam(required = false) String visibility,
+            @RequestParam(required = false) String tag,
+            Authentication authentication) {
         try {
-            List<AlbumFeedItemResponse> items = albumService.getAlbumFeed(type, friendsOnly, tag);
+            List<AlbumFeedItemResponse> items = albumService.getAlbumFeed(type, visibility, tag, authentication);
             return ResponseEntity.ok(items);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
@@ -91,7 +92,7 @@ public class AlbumController {
                             .message("앨범 피드 조회 중 오류가 발생했습니다.")
                             .details(Map.of(
                                     "type", type == null ? "" : type,
-                                    "friendsOnly", friendsOnly == null ? "" : friendsOnly,
+                                    "visibility", visibility == null ? "" : visibility,
                                     "tag", tag == null ? "" : tag,
                                     "reason", e.getMessage() == null ? "null" : e.getMessage()))
                             .build());
@@ -164,7 +165,8 @@ public class AlbumController {
 
     // [BACK][API]
     // - 어디서 호출? : frontend postService.updatePost()
-    // - 입력값 : albumId(PathVariable), body(title, bodyText, visibility), Authentication
+    // - 입력값 : albumId(PathVariable), body(title, bodyText, visibility),
+    // Authentication
     // - 출력값 : AlbumDetailResponse 또는 ApiErrorResponse
     @PutMapping("/{albumId}")
     public ResponseEntity<?> updateAlbum(
@@ -174,13 +176,14 @@ public class AlbumController {
     	
     	 System.out.println("photoIds type: " + body.getPhotoIds().getClass().getName());
     	    System.out.println("tags type: " + body.getTags().getClass().getName());
-        try {
+        try 
 
             String title = body.getTitle();
             String bodyText = body.getBodyText();
             String visibility = body.getVisibility();
 
             AlbumDetailResponse response = albumService.updateAlbum(albumId, title, bodyText, visibility, authentication);
+
             return ResponseEntity.ok(response);
         } catch (AccessDeniedException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
@@ -244,4 +247,3 @@ public class AlbumController {
     }
 
 }
-
