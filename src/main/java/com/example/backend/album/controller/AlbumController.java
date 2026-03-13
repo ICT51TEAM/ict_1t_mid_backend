@@ -26,7 +26,6 @@ import com.example.backend.album.dto.CreateAlbumResponse;
 import com.example.backend.album.service.AlbumService;
 import com.example.backend.global.dto.ApiErrorResponse;
 
-
 import lombok.RequiredArgsConstructor;
 
 /*
@@ -51,197 +50,212 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AlbumController {
 
-    private final AlbumService albumService;
+        private final AlbumService albumService;
 
-    // [BACK][API]
-    // - 어디서 호출? : 프론트 CreatePhotoAlbumPage 초기 로딩/디버깅
-    // - 입력값 : 없음
-    // - 출력값 : DB에 등록된 layoutType 코드 목록
-    @GetMapping("/layout-types")
-    public ResponseEntity<?> getLayoutTypes() {
-        try {
-            List<String> layoutTypes = albumService.getAvailableLayoutTypes();
-            return ResponseEntity.ok(Map.of("layoutTypes", layoutTypes));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                    ApiErrorResponse.builder()
-                            .code("INTERNAL_SERVER_ERROR")
-                            .message("레이아웃 코드 조회 중 오류가 발생했습니다.")
-                            .details(Map.of())
-                            .build());
+        // [BACK][API]
+        // - 어디서 호출? : 프론트 CreatePhotoAlbumPage 초기 로딩/디버깅
+        // - 입력값 : 없음
+        // - 출력값 : DB에 등록된 layoutType 코드 목록
+        @GetMapping("/layout-types")
+        public ResponseEntity<?> getLayoutTypes() {
+                try {
+                        List<String> layoutTypes = albumService.getAvailableLayoutTypes();
+                        return ResponseEntity.ok(Map.of("layoutTypes", layoutTypes));
+                } catch (Exception e) {
+                        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                                        ApiErrorResponse.builder()
+                                                        .code("INTERNAL_SERVER_ERROR")
+                                                        .message("레이아웃 코드 조회 중 오류가 발생했습니다.")
+                                                        .details(Map.of())
+                                                        .build());
+                }
         }
-    }
 
-    // [BACK][API]
-    // - 어디서 호출? : frontend/src/api/postService.js (getPosts)
-    // - 입력값 : type, friendsOnly, tag
-    // - 출력값 : 피드 카드 목록
-    @GetMapping("/feed")
-    public ResponseEntity<?> getAlbumFeed(
-            @RequestParam(required = false) String type,
-            @RequestParam(required = false) Boolean friendsOnly,
-            @RequestParam(required = false) String tag) {
-        try {
-            List<AlbumFeedItemResponse> items = albumService.getAlbumFeed(type, friendsOnly, tag);
-            return ResponseEntity.ok(items);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                    ApiErrorResponse.builder()
-                            .code("INTERNAL_SERVER_ERROR")
-                            .message("앨범 피드 조회 중 오류가 발생했습니다.")
-                            .details(Map.of(
-                                    "type", type == null ? "" : type,
-                                    "friendsOnly", friendsOnly == null ? "" : friendsOnly,
-                                    "tag", tag == null ? "" : tag,
-                                    "reason", e.getMessage() == null ? "null" : e.getMessage()))
-                            .build());
+        // [BACK][API]
+        // - 어디서 호출? : frontend/src/api/postService.js (getPosts)
+        // - 입력값 : type, friendsOnly, tag
+        // - 출력값 : 피드 카드 목록
+        @GetMapping("/feed")
+        public ResponseEntity<?> getAlbumFeed(
+                        @RequestParam(required = false) String type,
+                        @RequestParam(required = false) String visibility,
+                        @RequestParam(required = false) String tag,
+                        Authentication authentication) {
+                try {
+                        List<AlbumFeedItemResponse> items = albumService.getAlbumFeed(type, visibility, tag,
+                                        authentication);
+                        return ResponseEntity.ok(items);
+                } catch (Exception e) {
+                        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                                        ApiErrorResponse.builder()
+                                                        .code("INTERNAL_SERVER_ERROR")
+                                                        .message("앨범 피드 조회 중 오류가 발생했습니다.")
+                                                        .details(Map.of(
+                                                                        "type", type == null ? "" : type,
+                                                                        "visibility",
+                                                                        visibility == null ? "" : visibility,
+                                                                        "tag", tag == null ? "" : tag,
+                                                                        "reason",
+                                                                        e.getMessage() == null ? "null"
+                                                                                        : e.getMessage()))
+                                                        .build());
+                }
         }
-    }
 
-    // [BACK][API]
-    // - 어디서 호출? : frontend/src/api/albumService.js
-    // - 입력값 : CreateAlbumRequest JSON
-    // - 출력값 : CreateAlbumResponse 또는 ApiErrorResponse
-    @PostMapping
-    public ResponseEntity<?> createAlbum(@RequestBody CreateAlbumRequest request) {
-        try {
-            CreateAlbumResponse response = albumService.createAlbum(request);
-            return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(
-                    ApiErrorResponse.builder()
-                            .code("VALIDATION_ERROR")
-                            .message(e.getMessage())
-                            .details(Map.of("title", request.getTitle()))
-                            .build());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                    ApiErrorResponse.builder()
-                            .code("INTERNAL_SERVER_ERROR")
-                            .message("앨범 생성 중 오류가 발생했습니다.")
-                            .details(Map.of(
-                                    "exception", e.getClass().getName(),
-                                    "reason", e.getMessage() == null ? "null" : e.getMessage()))
-                            .build());
+        // [BACK][API]
+        // - 어디서 호출? : frontend/src/api/albumService.js
+        // - 입력값 : CreateAlbumRequest JSON
+        // - 출력값 : CreateAlbumResponse 또는 ApiErrorResponse
+        @PostMapping
+        public ResponseEntity<?> createAlbum(@RequestBody CreateAlbumRequest request) {
+                try {
+                        CreateAlbumResponse response = albumService.createAlbum(request);
+                        return ResponseEntity.ok(response);
+                } catch (IllegalArgumentException e) {
+                        return ResponseEntity.badRequest().body(
+                                        ApiErrorResponse.builder()
+                                                        .code("VALIDATION_ERROR")
+                                                        .message(e.getMessage())
+                                                        .details(Map.of("title", request.getTitle()))
+                                                        .build());
+                } catch (Exception e) {
+                        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                                        ApiErrorResponse.builder()
+                                                        .code("INTERNAL_SERVER_ERROR")
+                                                        .message("앨범 생성 중 오류가 발생했습니다.")
+                                                        .details(Map.of(
+                                                                        "exception", e.getClass().getName(),
+                                                                        "reason",
+                                                                        e.getMessage() == null ? "null"
+                                                                                        : e.getMessage()))
+                                                        .build());
+                }
         }
-    }
 
-    // [BACK][API]
-    // - 어디서 호출? : frontend/src/pages/feed/AlbumDetailPage.jsx
-    // - 입력값 : albumId(PathVariable)
-    // - 출력값 : AlbumDetailResponse 또는 ApiErrorResponse
-    @GetMapping("/{albumId}")
-    public ResponseEntity<?> getAlbumDetail(@PathVariable Long albumId) {
-        try {
-            AlbumDetailResponse response = albumService.getAlbumDetail(albumId);
-            return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(
-                    ApiErrorResponse.builder()
-                            .code("VALIDATION_ERROR")
-                            .message(e.getMessage())
-                            .details(Map.of("albumId", albumId))
-                            .build());
-        } catch (NoSuchElementException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                    ApiErrorResponse.builder()
-                            .code("NOT_FOUND")
-                            .message(e.getMessage())
-                            .details(Map.of("albumId", albumId))
-                            .build());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                    ApiErrorResponse.builder()
-                            .code("INTERNAL_SERVER_ERROR")
-                            .message("앨범 상세 조회 중 오류가 발생했습니다.")
-                            .details(Map.of(
-                                    "albumId", albumId,
-                                    "exception", e.getClass().getName(),
-                                    "reason", e.getMessage() == null ? "null" : e.getMessage()))
-                            .build());
+        // [BACK][API]
+        // - 어디서 호출? : frontend/src/pages/feed/AlbumDetailPage.jsx
+        // - 입력값 : albumId(PathVariable)
+        // - 출력값 : AlbumDetailResponse 또는 ApiErrorResponse
+        @GetMapping("/{albumId}")
+        public ResponseEntity<?> getAlbumDetail(@PathVariable Long albumId) {
+                try {
+                        AlbumDetailResponse response = albumService.getAlbumDetail(albumId);
+                        return ResponseEntity.ok(response);
+                } catch (IllegalArgumentException e) {
+                        return ResponseEntity.badRequest().body(
+                                        ApiErrorResponse.builder()
+                                                        .code("VALIDATION_ERROR")
+                                                        .message(e.getMessage())
+                                                        .details(Map.of("albumId", albumId))
+                                                        .build());
+                } catch (NoSuchElementException e) {
+                        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                                        ApiErrorResponse.builder()
+                                                        .code("NOT_FOUND")
+                                                        .message(e.getMessage())
+                                                        .details(Map.of("albumId", albumId))
+                                                        .build());
+                } catch (Exception e) {
+                        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                                        ApiErrorResponse.builder()
+                                                        .code("INTERNAL_SERVER_ERROR")
+                                                        .message("앨범 상세 조회 중 오류가 발생했습니다.")
+                                                        .details(Map.of(
+                                                                        "albumId", albumId,
+                                                                        "exception", e.getClass().getName(),
+                                                                        "reason",
+                                                                        e.getMessage() == null ? "null"
+                                                                                        : e.getMessage()))
+                                                        .build());
+                }
         }
-    }
 
-    // [BACK][API]
-    // - 어디서 호출? : frontend postService.updatePost()
-    // - 입력값 : albumId(PathVariable), body(title, bodyText, visibility), Authentication
-    // - 출력값 : AlbumDetailResponse 또는 ApiErrorResponse
-    @PutMapping("/{albumId}")
-    public ResponseEntity<?> updateAlbum(
-            @PathVariable Long albumId,
-            @RequestBody AlbumUpdateRequests  body,
-            Authentication authentication) {
-    	
-    	 System.out.println("photoIds type: " + body.getPhotoIds().getClass().getName());
-    	    System.out.println("tags type: " + body.getTags().getClass().getName());
-        try {
+        // [BACK][API]
+        // - 어디서 호출? : frontend postService.updatePost()
+        // - 입력값 : albumId(PathVariable), body(title, bodyText, visibility),
+        // Authentication
+        // - 출력값 : AlbumDetailResponse 또는 ApiErrorResponse
+        @PutMapping("/{albumId}")
+        public ResponseEntity<?> updateAlbum(
+                        @PathVariable Long albumId,
+                        @RequestBody AlbumUpdateRequests body,
+                        Authentication authentication) {
 
-            String title = body.getTitle();
-            String bodyText = body.getBodyText();
-            String visibility = body.getVisibility();
+                System.out.println("photoIds type: " + body.getPhotoIds().getClass().getName());
+                System.out.println("tags type: " + body.getTags().getClass().getName());
+                try {
 
-            AlbumDetailResponse response = albumService.updateAlbum(albumId, title, bodyText, visibility, authentication);
-            return ResponseEntity.ok(response);
-        } catch (AccessDeniedException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
-                    ApiErrorResponse.builder()
-                            .code("FORBIDDEN")
-                            .message(e.getMessage())
-                            .details(Map.of("albumId", albumId))
-                            .build());
-        } catch (NoSuchElementException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                    ApiErrorResponse.builder()
-                            .code("NOT_FOUND")
-                            .message(e.getMessage())
-                            .details(Map.of("albumId", albumId))
-                            .build());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                    ApiErrorResponse.builder()
-                            .code("INTERNAL_SERVER_ERROR")
-                            .message("앨범 수정 중 오류가 발생했습니다.")
-                            .details(Map.of("albumId", albumId,
-                                    "reason", e.getMessage() == null ? "null" : e.getMessage()))
-                            .build());
+                        String title = body.getTitle();
+                        String bodyText = body.getBodyText();
+                        String visibility = body.getVisibility();
+
+                        AlbumDetailResponse response = albumService.updateAlbum(albumId, title, bodyText, visibility,
+                                        authentication);
+
+                        return ResponseEntity.ok(response);
+                } catch (AccessDeniedException e) {
+                        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
+                                        ApiErrorResponse.builder()
+                                                        .code("FORBIDDEN")
+                                                        .message(e.getMessage())
+                                                        .details(Map.of("albumId", albumId))
+                                                        .build());
+                } catch (NoSuchElementException e) {
+                        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                                        ApiErrorResponse.builder()
+                                                        .code("NOT_FOUND")
+                                                        .message(e.getMessage())
+                                                        .details(Map.of("albumId", albumId))
+                                                        .build());
+                } catch (Exception e) {
+                        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                                        ApiErrorResponse.builder()
+                                                        .code("INTERNAL_SERVER_ERROR")
+                                                        .message("앨범 수정 중 오류가 발생했습니다.")
+                                                        .details(Map.of("albumId", albumId,
+                                                                        "reason",
+                                                                        e.getMessage() == null ? "null"
+                                                                                        : e.getMessage()))
+                                                        .build());
+                }
         }
-    }
 
-    // [BACK][API]
-    // - 어디서 호출? : frontend postService.deletePost()
-    // - 입력값 : albumId(PathVariable), Authentication
-    // - 출력값 : 200 OK with message
-    @DeleteMapping("/{albumId}")
-    public ResponseEntity<?> deleteAlbum(
-            @PathVariable Long albumId,
-            Authentication authentication) {
-        try {
-            albumService.deleteAlbum(albumId, authentication);
-            return ResponseEntity.ok(Map.of("message", "앨범이 삭제되었습니다."));
-        } catch (AccessDeniedException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
-                    ApiErrorResponse.builder()
-                            .code("FORBIDDEN")
-                            .message(e.getMessage())
-                            .details(Map.of("albumId", albumId))
-                            .build());
-        } catch (NoSuchElementException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                    ApiErrorResponse.builder()
-                            .code("NOT_FOUND")
-                            .message(e.getMessage())
-                            .details(Map.of("albumId", albumId))
-                            .build());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                    ApiErrorResponse.builder()
-                            .code("INTERNAL_SERVER_ERROR")
-                            .message("앨범 삭제 중 오류가 발생했습니다.")
-                            .details(Map.of("albumId", albumId,
-                                    "reason", e.getMessage() == null ? "null" : e.getMessage()))
-                            .build());
+        // [BACK][API]
+        // - 어디서 호출? : frontend postService.deletePost()
+        // - 입력값 : albumId(PathVariable), Authentication
+        // - 출력값 : 200 OK with message
+        @DeleteMapping("/{albumId}")
+        public ResponseEntity<?> deleteAlbum(
+                        @PathVariable Long albumId,
+                        Authentication authentication) {
+                try {
+                        albumService.deleteAlbum(albumId, authentication);
+                        return ResponseEntity.ok(Map.of("message", "앨범이 삭제되었습니다."));
+                } catch (AccessDeniedException e) {
+                        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
+                                        ApiErrorResponse.builder()
+                                                        .code("FORBIDDEN")
+                                                        .message(e.getMessage())
+                                                        .details(Map.of("albumId", albumId))
+                                                        .build());
+                } catch (NoSuchElementException e) {
+                        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                                        ApiErrorResponse.builder()
+                                                        .code("NOT_FOUND")
+                                                        .message(e.getMessage())
+                                                        .details(Map.of("albumId", albumId))
+                                                        .build());
+                } catch (Exception e) {
+                        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                                        ApiErrorResponse.builder()
+                                                        .code("INTERNAL_SERVER_ERROR")
+                                                        .message("앨범 삭제 중 오류가 발생했습니다.")
+                                                        .details(Map.of("albumId", albumId,
+                                                                        "reason",
+                                                                        e.getMessage() == null ? "null"
+                                                                                        : e.getMessage()))
+                                                        .build());
+                }
         }
-    }
 
 }
-
