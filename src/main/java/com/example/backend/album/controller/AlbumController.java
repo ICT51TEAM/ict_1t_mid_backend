@@ -170,58 +170,51 @@ public class AlbumController {
                 }
         }
 
-        // [BACK][API]
-        // - 어디서 호출? : frontend postService.updatePost()
-        // - 입력값 : albumId(PathVariable), body(title, bodyText, visibility),
-        // Authentication
-        // - 출력값 : AlbumDetailResponse 또는 ApiErrorResponse
-        @PutMapping("/{albumId}")
-        public ResponseEntity<?> updateAlbum(
-                        @PathVariable Long albumId,
-                        @RequestBody AlbumUpdateRequests body,
-                        Authentication authentication) {
+    }
 
-                try {
-                        // DTO에서 값 추출
-                        String title = (String) body.getTitle();
-                        String bodyText = (String) body.getBodyText();
-                        String visibility = (String) body.getVisibility();
+    // [BACK][API]
+    // - 어디서 호출? : frontend postService.updatePost()
+    // - 입력값 : albumId(PathVariable), body(title, bodyText, visibility),
+    // Authentication
+    // - 출력값 : AlbumDetailResponse 또는 ApiErrorResponse
+    @PutMapping("/{albumId}")
+    public ResponseEntity<?> updateAlbum(
+            @PathVariable Long albumId,
+            @RequestBody AlbumUpdateRequests  body,
+            Authentication authentication) {
+        try {
 
-                        // 디버깅용 로그 (서버 콘솔 확인용)
-                        if (body.getPhotoIds() != null) {
-                                System.out.println("photoIds type: " + body.getPhotoIds().getClass().getName());
-                        }
+            String title = body.getTitle();
+            String bodyText = body.getBodyText();
+            String visibility = body.getVisibility();
 
-                        // 서비스 호출
-                        AlbumDetailResponse response = albumService.updateAlbum(albumId, title, bodyText, visibility,
-                                        authentication);
-                        return ResponseEntity.ok(response);
+            AlbumDetailResponse response = albumService.updateAlbum(albumId, title, bodyText, visibility, authentication);
 
-                } catch (AccessDeniedException e) {
-                        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
-                                        ApiErrorResponse.builder()
-                                                        .code("FORBIDDEN")
-                                                        .message(e.getMessage())
-                                                        .details(Map.of("albumId", albumId))
-                                                        .build()); // 세미콜론 확인
-                } catch (NoSuchElementException e) {
-                        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                                        ApiErrorResponse.builder()
-                                                        .code("NOT_FOUND")
-                                                        .message(e.getMessage())
-                                                        .details(Map.of("albumId", albumId))
-                                                        .build()); // 세미콜론 확인
-                } catch (Exception e) {
-                        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                                        ApiErrorResponse.builder()
-                                                        .code("INTERNAL_SERVER_ERROR")
-                                                        .message("앨범 수정 중 오류가 발생했습니다.")
-                                                        .details(Map.of("albumId", albumId,
-                                                                        "reason",
-                                                                        e.getMessage() == null ? "null"
-                                                                                        : e.getMessage()))
-                                                        .build()); // 세미콜론 확인
-                }
+            return ResponseEntity.ok(response);
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
+                    ApiErrorResponse.builder()
+                            .code("FORBIDDEN")
+                            .message(e.getMessage())
+                            .details(Map.of("albumId", albumId))
+                            .build());
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                    ApiErrorResponse.builder()
+                            .code("NOT_FOUND")
+                            .message(e.getMessage())
+                            .details(Map.of("albumId", albumId))
+                            .build());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                    ApiErrorResponse.builder()
+                            .code("INTERNAL_SERVER_ERROR")
+                            .message("앨범 수정 중 오류가 발생했습니다.")
+                            .details(Map.of("albumId", albumId,
+                                    "reason", e.getMessage() == null ? "null" : e.getMessage()))
+                            .build());
+
         }
 
         // [BACK][API]

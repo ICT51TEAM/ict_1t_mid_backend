@@ -1,9 +1,7 @@
 package com.example.backend.photo.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.example.backend.photo.entity.PhotoEntity;
 
@@ -22,8 +20,4 @@ import com.example.backend.photo.entity.PhotoEntity;
 @Repository
 public interface PhotoRepository extends JpaRepository<PhotoEntity, Long> {
 
-    @Modifying
-    @Transactional
-    // PhotoEntity는 'album' 필드를 가지고 있으므로 여기서만 이 이름이 가능합니다.
-    void deleteByAlbum_Id(Long albumId);
 }
