@@ -173,10 +173,7 @@ public class AlbumController {
             @PathVariable Long albumId,
             @RequestBody AlbumUpdateRequests  body,
             Authentication authentication) {
-    	
-    	 System.out.println("photoIds type: " + body.getPhotoIds().getClass().getName());
-    	    System.out.println("tags type: " + body.getTags().getClass().getName());
-        try 
+        try {
 
             String title = body.getTitle();
             String bodyText = body.getBodyText();
