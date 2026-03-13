@@ -175,15 +175,11 @@ public class AlbumController {
     	 System.out.println("photoIds type: " + body.getPhotoIds().getClass().getName());
     	    System.out.println("tags type: " + body.getTags().getClass().getName());
         try {
-<<<<<<< Updated upstream
-            String title = body.get("title");
-            String bodyText = body.get("bodyText");
-            String visibility = body.get("visibility");
-=======
+
             String title = body.getTitle();
             String bodyText = body.getBodyText();
             String visibility = body.getVisibility();
->>>>>>> Stashed changes
+
             AlbumDetailResponse response = albumService.updateAlbum(albumId, title, bodyText, visibility, authentication);
             return ResponseEntity.ok(response);
         } catch (AccessDeniedException e) {
