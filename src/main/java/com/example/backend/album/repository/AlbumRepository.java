@@ -20,4 +20,6 @@ public interface AlbumRepository extends JpaRepository<AlbumEntity, Long> {
     // - 어디서 호출? : AlbumService.getAlbumFeed()
     // - 출력값 : 생성시각(createdAt) 내림차순 앨범 목록
     List<AlbumEntity> findAllByOrderByCreatedAtDesc();
+    
+    void deleteById(Long id);
 }

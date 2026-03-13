@@ -6,7 +6,6 @@ import java.util.NoSuchElementException;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -21,11 +20,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.backend.album.dto.AlbumDetailResponse;
 import com.example.backend.album.dto.AlbumFeedItemResponse;
+import com.example.backend.album.dto.AlbumUpdateRequests;
 import com.example.backend.album.dto.CreateAlbumRequest;
 import com.example.backend.album.dto.CreateAlbumResponse;
-import com.example.backend.album.dto.LatestFrinendAlbumDto;
 import com.example.backend.album.service.AlbumService;
 import com.example.backend.global.dto.ApiErrorResponse;
+
 
 import lombok.RequiredArgsConstructor;
 
@@ -169,12 +169,21 @@ public class AlbumController {
     @PutMapping("/{albumId}")
     public ResponseEntity<?> updateAlbum(
             @PathVariable Long albumId,
-            @RequestBody Map<String, String> body,
+            @RequestBody AlbumUpdateRequests  body,
             Authentication authentication) {
+    	
+    	 System.out.println("photoIds type: " + body.getPhotoIds().getClass().getName());
+    	    System.out.println("tags type: " + body.getTags().getClass().getName());
         try {
+<<<<<<< Updated upstream
             String title = body.get("title");
             String bodyText = body.get("bodyText");
             String visibility = body.get("visibility");
+=======
+            String title = body.getTitle();
+            String bodyText = body.getBodyText();
+            String visibility = body.getVisibility();
+>>>>>>> Stashed changes
             AlbumDetailResponse response = albumService.updateAlbum(albumId, title, bodyText, visibility, authentication);
             return ResponseEntity.ok(response);
         } catch (AccessDeniedException e) {
