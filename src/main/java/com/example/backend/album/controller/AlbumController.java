@@ -168,9 +168,8 @@ public class AlbumController {
                                                                                         : e.getMessage()))
                                                         .build());
                 }
-        }
-
-    
+ 
+    }
 
     // [BACK][API]
     // - 어디서 호출? : frontend postService.updatePost()
@@ -214,6 +213,7 @@ public class AlbumController {
                             .details(Map.of("albumId", albumId,
                                     "reason", e.getMessage() == null ? "null" : e.getMessage()))
                             .build());
+        }
 
         }
     }
