@@ -85,6 +85,9 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
     //  - SQL: WHERE username LIKE '%keyword%'
     List<UserEntity> findByUsernameContaining(String username);
 
+    @Query("SELECT u FROM UserEntity u WHERE LOWER(u.username) LIKE LOWER(CONCAT('%', :keyword, '%')) AND (u.visibility IS NULL OR u.visibility <> 'PRIVATE')")
+    List<UserEntity> searchByUsernameIgnoreCaseExcludePrivate(@Param("keyword") String keyword);
+
  // 유저의 설정 삭제
     @Modifying
     @Query("DELETE FROM UserSettingsEntity s WHERE s.user.id = :userId")
