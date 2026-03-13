@@ -168,8 +168,7 @@ public class AlbumController {
                                                                                         : e.getMessage()))
                                                         .build());
                 }
-        }
-
+ 
     }
 
     // [BACK][API]
@@ -214,6 +213,7 @@ public class AlbumController {
                             .details(Map.of("albumId", albumId,
                                     "reason", e.getMessage() == null ? "null" : e.getMessage()))
                             .build());
+        }
 
         }
 
