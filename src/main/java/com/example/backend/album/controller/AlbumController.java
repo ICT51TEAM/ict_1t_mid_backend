@@ -181,32 +181,36 @@ public class AlbumController {
                         @RequestBody AlbumUpdateRequests body,
                         Authentication authentication) {
 
-                System.out.println("photoIds type: " + body.getPhotoIds().getClass().getName());
-                System.out.println("tags type: " + body.getTags().getClass().getName());
                 try {
+                        // DTO에서 값 추출
+                        String title = (String) body.getTitle();
+                        String bodyText = (String) body.getBodyText();
+                        String visibility = (String) body.getVisibility();
 
-                        String title = body.getTitle();
-                        String bodyText = body.getBodyText();
-                        String visibility = body.getVisibility();
+                        // 디버깅용 로그 (서버 콘솔 확인용)
+                        if (body.getPhotoIds() != null) {
+                                System.out.println("photoIds type: " + body.getPhotoIds().getClass().getName());
+                        }
 
+                        // 서비스 호출
                         AlbumDetailResponse response = albumService.updateAlbum(albumId, title, bodyText, visibility,
                                         authentication);
-
                         return ResponseEntity.ok(response);
+
                 } catch (AccessDeniedException e) {
                         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
                                         ApiErrorResponse.builder()
                                                         .code("FORBIDDEN")
                                                         .message(e.getMessage())
                                                         .details(Map.of("albumId", albumId))
-                                                        .build());
+                                                        .build()); // 세미콜론 확인
                 } catch (NoSuchElementException e) {
                         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
                                         ApiErrorResponse.builder()
                                                         .code("NOT_FOUND")
                                                         .message(e.getMessage())
                                                         .details(Map.of("albumId", albumId))
-                                                        .build());
+                                                        .build()); // 세미콜론 확인
                 } catch (Exception e) {
                         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                                         ApiErrorResponse.builder()
@@ -216,7 +220,7 @@ public class AlbumController {
                                                                         "reason",
                                                                         e.getMessage() == null ? "null"
                                                                                         : e.getMessage()))
-                                                        .build());
+                                                        .build()); // 세미콜론 확인
                 }
         }
 
