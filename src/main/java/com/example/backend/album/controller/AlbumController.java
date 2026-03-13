@@ -197,6 +197,7 @@ public class AlbumController {
                             .details(Map.of("albumId", albumId))
                             .build());
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                     ApiErrorResponse.builder()
                             .code("INTERNAL_SERVER_ERROR")
