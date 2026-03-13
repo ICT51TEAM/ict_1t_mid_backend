@@ -67,6 +67,10 @@ spring:
           starttls:
             enable: true
             required: true
+  jackson:
+    deserialization:
+      accept-single-value-as-array: true
+      fail-on-unknown-properties: false
 
 springdoc:
   swagger-ui:

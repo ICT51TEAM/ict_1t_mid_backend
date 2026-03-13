@@ -64,7 +64,7 @@ import lombok.RequiredArgsConstructor;
 public class AlbumService {
 
     // [BACK] 공개 범위 허용값 목록
-    private static final Set<String> ALLOWED_VISIBILITY = Set.of("PUBLIC", "FRIENDS", "PRIVATE");
+    private static final Set<String> ALLOWED_VISIBILITY = Set.of("PUBLIC", "FRIENDS_ONLY", "PRIVATE");
 
     private final AlbumRepository albumRepository;
     private final AlbumPhotoRepository albumPhotoRepository;
@@ -469,7 +469,7 @@ public class AlbumService {
             throw new IllegalArgumentException("recordDate는 필수입니다.");
         }
         if (request.getVisibility() == null || !ALLOWED_VISIBILITY.contains(request.getVisibility())) {
-            throw new IllegalArgumentException("visibility는 PUBLIC, FRIENDS, PRIVATE 중 하나여야 합니다.");
+            throw new IllegalArgumentException("visibility는 PUBLIC, FRIENDS_ONLY, PRIVATE 중 하나여야 합니다.");
         }
         if (request.getLayoutType() == null || request.getLayoutType().isBlank()) {
             throw new IllegalArgumentException("layoutType은 필수입니다.");

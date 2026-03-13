@@ -2,6 +2,7 @@ package com.example.backend.photo.entity;
 
 import java.time.LocalDateTime;
 
+import com.example.backend.album.entity.AlbumEntity;
 import com.example.backend.user.entity.UserEntity;
 
 import jakarta.persistence.Column;
@@ -53,6 +54,10 @@ public class PhotoEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "USER_ID", nullable = false)
     private UserEntity user;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ALBUM_ID") // DB 컬럼명에 맞춰주세요. 보통 ALBUM_ID입니다.
+    private AlbumEntity album;
 
     // [DB] PHOTO.PHOTO_URL (실제 이미지 접근 경로)
     @Column(name = "PHOTO_URL", nullable = false, length = 500)

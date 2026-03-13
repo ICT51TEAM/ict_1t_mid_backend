@@ -85,4 +85,13 @@ public class AlbumEntity {
             this.createdAt = LocalDateTime.now();
         }
     }
+
+    public void updateInfo(String title, String bodyText, String visibility, String recordDate, String layoutType) {
+        this.title = title;
+        this.bodyText = bodyText;
+        this.visibility = visibility;
+        this.recordDate = java.time.LocalDate.parse(recordDate); 
+        this.layoutType = layoutType;
+		
+	}
 }
