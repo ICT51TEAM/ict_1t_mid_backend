@@ -1,13 +1,11 @@
 package com.example.backend.global.config;
 
-import org.apache.catalina.filters.HttpHeaderSecurityFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
@@ -24,8 +22,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import com.example.backend.user.entity.UserEntity; //(본인의 User 엔티티 경로 확인)
 
-import jakarta.mail.Session;
-
 import com.example.backend.auth.entity.RefreshToken;
 import com.example.backend.auth.repository.RefreshTokenRepository;
 import com.example.backend.auth.service.KakaoService;
@@ -37,7 +33,6 @@ import lombok.RequiredArgsConstructor;
 import java.net.URLEncoder;
 import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 
 @Configuration
@@ -69,7 +64,6 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
-                                "/swagger-ui/**",
                                 "/swagger-resources/**",
                                 "/webjars/**",
                                 "/api/login/**",
@@ -77,6 +71,7 @@ public class SecurityConfig {
                                 "/fss/**",
                                 "/friends/**",
                                 //"/users/**",
+                                "/users/me",
                                 "/kakao/login",
                                 "/badges/ranking/**",
                                 "/photos/**",

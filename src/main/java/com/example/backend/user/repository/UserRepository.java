@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 import java.util.List;
@@ -88,61 +89,39 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
     @Query("SELECT u FROM UserEntity u WHERE LOWER(u.username) LIKE LOWER(CONCAT('%', :keyword, '%')) AND (u.visibility IS NULL OR u.visibility <> 'PRIVATE')")
     List<UserEntity> searchByUsernameIgnoreCaseExcludePrivate(@Param("keyword") String keyword);
 
-    // 유저의 설정 삭제
     @Modifying
-    @Query("DELETE FROM UserSettingsEntity s WHERE s.user.id = :userId")
-    void deleteSettingsByUserId(@Param("userId") Long userId);
-
-    // ── 회원탈퇴용 삭제 메서드 (엔티티 없는 테이블 → nativeQuery 사용) ──
-
-    // 앨범 달개 삭제 (유저 앨범에 달린 달개 + 유저가 남긴 달개)
-    @Modifying
-    @Query(value = "DELETE FROM ALBUM_DALGAE WHERE GIVEN_BY_USER_ID = :userId OR ALBUM_ID IN (SELECT ALBUM_ID FROM ALBUM WHERE USER_ID = :userId)", nativeQuery = true)
-    void deleteAlbumDalgaeByUserId(@Param("userId") Long userId);
-
-    // 앨범 사진 삭제
-    @Modifying
-    @Query(value = "DELETE FROM ALBUM_PHOTO WHERE ALBUM_ID IN (SELECT ALBUM_ID FROM ALBUM WHERE USER_ID = :userId)", nativeQuery = true)
-    void deleteAlbumPhotosByUserId(@Param("userId") Long userId);
-
-    // 앨범 태그 삭제
-    @Modifying
-    @Query(value = "DELETE FROM ALBUM_TAGS WHERE ALBUM_ID IN (SELECT ALBUM_ID FROM ALBUM WHERE USER_ID = :userId)", nativeQuery = true)
-    void deleteAlbumTagsByUserId(@Param("userId") Long userId);
-
-    // 앨범 삭제
-    @Modifying
-    @Query(value = "DELETE FROM ALBUM WHERE USER_ID = :userId", nativeQuery = true)
-    void deleteAlbumsByUserId(@Param("userId") Long userId);
-
-    // 알림 삭제
-    @Modifying
-    @Query(value = "DELETE FROM NOTIFICATION WHERE USER_ID = :userId", nativeQuery = true)
-    void deleteNotificationsByUserId(@Param("userId") Long userId);
-
-    // QnA 댓글 삭제
-    @Modifying
-    @Query(value = "DELETE FROM QNA_COMMENTS WHERE USER_ID = :userId", nativeQuery = true)
-    void deleteQnaCommentsByUserId(@Param("userId") Long userId);
-
-    // QnA 게시글 삭제
-    @Modifying
-    @Query(value = "DELETE FROM QNA_POSTS WHERE USER_ID = :userId", nativeQuery = true)
-    void deleteQnaPostsByUserId(@Param("userId") Long userId);
-
-    // 사진 삭제
-    @Modifying
-    @Query(value = "DELETE FROM PHOTO WHERE USER_ID = :userId", nativeQuery = true)
-    void deletePhotosByUserId(@Param("userId") Long userId);
-
-    // 유저 삭제 (native query)
-    @Modifying
-    @Query(value = "DELETE FROM USERS WHERE USER_ID = :userId", nativeQuery = true)
-    void deleteByUserId(@Param("userId") Long userId);
-
-    // QnA 댓글 삭제(타인이 작성한 댓글)
-    @Modifying
-    @Query(value = "DELETE FROM QNA_COMMENTS WHERE ALBUM_ID IN (SELECT ALBUM_ID FROM QNA_POSTS WHERE USER_ID = :userId)", nativeQuery = true)
-    void deleteCommentsOnMyAlbumByUserId(Long uid);
+    @Transactional
+    @Query(value = """
+        BEGIN
+            -- 1. 친구 관계 (컬럼명 확인 필요: 보통 follower/following 또는 user_id/friend_id)
+            DELETE FROM FRIENDSHIPS WHERE USER_ID = :uid OR FRIEND_ID = :uid; 
+            
+            -- 2. 알림 (테이블명이 NOTIFICATIONS 인지 확인)
+            DELETE FROM NOTIFICATION WHERE USER_ID = :uid;
+            
+            -- 3. 토큰 및 설정
+            DELETE FROM REFRESH_TOKEN WHERE USER_ID = :uid;
+            DELETE FROM PASSWORD_RESET_TOKEN WHERE USER_ID = :uid;
+            DELETE FROM USER_SETTINGS WHERE USER_ID = :uid;
+            
+            -- 4. 앨범 하위 데이터
+            DELETE FROM ALBUM_DALGAE WHERE ALBUM_ID IN (SELECT ALBUM_ID FROM ALBUM WHERE USER_ID = :uid);
+            DELETE FROM ALBUM_PHOTO WHERE ALBUM_ID IN (SELECT ALBUM_ID FROM ALBUM WHERE USER_ID = :uid);
+            DELETE FROM ALBUM_TAGS WHERE ALBUM_ID IN (SELECT ALBUM_ID FROM ALBUM WHERE USER_ID = :uid);
+            
+            -- 5. QnA 및 댓글 (테이블명 QNA_COMMENT 인지 QNA_COMMENTS 인지 확인)
+            DELETE FROM QNA_COMMENTS WHERE USER_ID = :uid OR POST_ID IN (SELECT POST_ID FROM QNA_POSTS WHERE USER_ID = :uid);
+            DELETE FROM QNA_POSTS WHERE USER_ID = :uid;
+            
+            -- 6. 뱃지 (GIVEN_USER_ID 컬럼명이 맞는지 확인)
+            DELETE FROM BADGES WHERE USER_ID = :uid OR GIVEN_USER_ID = :uid;
+            
+            -- 7. 부모 데이터 삭제
+            DELETE FROM ALBUM WHERE USER_ID = :uid;
+            DELETE FROM PHOTO WHERE USER_ID = :uid;
+            DELETE FROM USERS WHERE USER_ID = :uid;
+        END;
+        """, nativeQuery = true)
+    void deleteAllUserData(@Param("uid") Long uid);
 
 }

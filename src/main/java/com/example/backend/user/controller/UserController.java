@@ -205,6 +205,7 @@ public class UserController implements UserControllerDocs {
     public ResponseEntity<?> deleteAccount(
             @RequestBody Map<String, String> body,
             @AuthenticationPrincipal Long userId) {
+    	System.out.println("####### 탈퇴 컨트롤러 진입 성공! #######");
 
         String password = body.get("password");
         userService.deleteAccount(userId, password);
