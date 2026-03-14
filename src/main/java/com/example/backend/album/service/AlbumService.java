@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.backend.album.dto.AlbumDetailPhotoDto;
 import com.example.backend.album.dto.AlbumDetailResponse;
 import com.example.backend.album.dto.AlbumFeedItemResponse;
+import com.example.backend.album.dto.AlbumUpdateRequests;
 import com.example.backend.album.dto.CreateAlbumRequest;
 import com.example.backend.album.dto.CreateAlbumResponse;
 import com.example.backend.album.dto.LatestFrinendAlbumDto;
@@ -647,7 +648,7 @@ public class AlbumService {
      * 작성자 본인 여부를 확인한 후 제목, 본문, 공개 범위를 업데이트합니다.
      */
     @Transactional
-    public AlbumDetailResponse updateAlbum(Long albumId, String title, String bodyText, String visibility,
+    public AlbumDetailResponse updateAlbum(Long albumId, AlbumUpdateRequests body,
             Authentication authentication) {
         AlbumEntity album = albumRepository.findById(albumId)
                 .orElseThrow(() -> new NoSuchElementException("앨범을 찾을 수 없습니다."));
@@ -656,6 +657,11 @@ public class AlbumService {
         if (!album.getUser().getId().equals(userId)) {
             throw new AccessDeniedException("본인의 게시글만 수정할 수 있습니다.");
         }
+
+        // 텍스트 필드 업데이트
+        String title = body.getTitle();
+        String bodyText = body.getBodyText();
+        String visibility = body.getVisibility();
 
         if (title != null && !title.trim().isEmpty()) {
             album.setTitle(title.trim());
@@ -666,8 +672,28 @@ public class AlbumService {
         if (visibility != null && ALLOWED_VISIBILITY.contains(visibility)) {
             album.setVisibility(visibility);
         }
+        if (body.getRecordDate() != null && !body.getRecordDate().isBlank()) {
+            album.setRecordDate(java.time.LocalDate.parse(body.getRecordDate()));
+        }
+        if (body.getLayoutType() != null && !body.getLayoutType().isBlank()) {
+            album.setLayoutType(normalizeLayoutType(body.getLayoutType()));
+        }
 
         albumRepository.save(album);
+
+        // 사진 연결 업데이트: JdbcTemplate으로 즉시 DELETE 후 새로 저장
+        if (body.getPhotoIds() != null && !body.getPhotoIds().isEmpty()) {
+            jdbcTemplate.update("DELETE FROM ALBUM_PHOTO WHERE ALBUM_ID = ?", albumId);
+            albumPhotoRepository.flush();
+            saveAlbumPhotos(album, body.getPhotoIds(), body.getSlotIndexes());
+        }
+
+        // 태그 업데이트: JdbcTemplate으로 즉시 DELETE 후 새로 저장
+        if (body.getTags() != null) {
+            jdbcTemplate.update("DELETE FROM ALBUM_TAGS WHERE ALBUM_ID = ?", albumId);
+            saveAlbumTags(album, body.getTags());
+        }
+
         return getAlbumDetail(albumId);
     }
 

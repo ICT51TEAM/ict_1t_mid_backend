@@ -55,18 +55,18 @@ public interface BadgeRepository extends JpaRepository<Badge, Long> {
 			+ "GROUP BY b.badgeType.id")
 	List<BadgeCountMappingDto> countByUserIdGroupByTypeId(@Param("userId") Long userId);
 
-	// 글로벌 기준 달개 랭킹 통계 산출물(alltime)
+	// 글로벌 기준 달개 랭킹 통계 산출물(alltime) — 앨범 주인이 "받은" 달개 기준
 	@Query("SELECT new com.example.backend.badge.dto.BadgeRankingDto("
 			+ "0, u.id, u.username, u.profileImageUrl, COUNT(b)) " + "FROM UserEntity u "
-			+ "LEFT JOIN Badge b ON u.id = b.user.id " + "GROUP BY u.id, u.username, u.profileImageUrl "
+			+ "LEFT JOIN Badge b ON u.id = b.album.user.id " + "GROUP BY u.id, u.username, u.profileImageUrl "
 			+ "ORDER BY COUNT(b) DESC, u.id ASC")
 	Page<BadgeRankingDto> findByAllBadgeRankings(Pageable pageable);
 
-	// 글로벌 기준 달개 랭킹 통계 산출물(weekly)
+	// 글로벌 기준 달개 랭킹 통계 산출물(weekly) — 앨범 주인이 "받은" 달개 기준
 	@Query("SELECT new com.example.backend.badge.dto.BadgeRankingDto(" +
 			"0, u.id, u.username, u.profileImageUrl, COUNT(b)) " +
 			"FROM UserEntity u " +
-			"LEFT JOIN Badge b ON u.id = b.user.id " +
+			"LEFT JOIN Badge b ON u.id = b.album.user.id " +
 			"AND b.createdAt BETWEEN :startDate AND :endDate " +
 			"GROUP BY u.id, u.username, u.profileImageUrl " +
 			"ORDER BY COUNT(b) DESC, u.id ASC")
@@ -75,14 +75,14 @@ public interface BadgeRepository extends JpaRepository<Badge, Long> {
 			@Param("endDate") LocalDateTime endDate,
 			Pageable pageable);
 
-	// 친구 기준 달개 랭킹 통계 산출물(alltime)
+	// 친구 기준 달개 랭킹 통계 산출물(alltime) — 앨범 주인이 "받은" 달개 기준
 	@Query("SELECT new com.example.backend.badge.dto.BadgeRankingDto(0, u.id, u.username, u.profileImageUrl, COUNT(b)) "
 			+ "FROM UserEntity u "
-			+ "JOIN Badge b ON u.id = b.user.id "
+			+ "JOIN Badge b ON u.id = b.album.user.id "
 			+ "JOIN Friendship f ON (u.id = f.fromUser.id OR u.id = f.toUser.id) "
 			+ "WHERE (f.fromUser.id = :myId OR f.toUser.id = :myId) "
 			+ "AND f.status = 'ACCEPTED' "
-			+ "AND u.id != :myId " // :userId -> :myId 로 변경
+			+ "AND u.id != :myId "
 			+ "GROUP BY u.id, u.username, u.profileImageUrl "
 			+ "ORDER BY COUNT(b) DESC, u.id ASC")
 	Page<BadgeRankingDto> findByFriendsBadgeRankings(@Param("myId") Long myId, Pageable pageable);

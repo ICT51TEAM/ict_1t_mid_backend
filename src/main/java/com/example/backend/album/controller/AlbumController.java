@@ -183,11 +183,7 @@ public class AlbumController {
             Authentication authentication) {
         try {
 
-            String title = body.getTitle();
-            String bodyText = body.getBodyText();
-            String visibility = body.getVisibility();
-
-            AlbumDetailResponse response = albumService.updateAlbum(albumId, title, bodyText, visibility, authentication);
+            AlbumDetailResponse response = albumService.updateAlbum(albumId, body, authentication);
 
             return ResponseEntity.ok(response);
         } catch (AccessDeniedException e) {
