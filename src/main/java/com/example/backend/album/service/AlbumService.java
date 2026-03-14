@@ -81,6 +81,11 @@ public class AlbumService {
     // - 어디서 호출? : AlbumController.createAlbum()
     // - 입력값 : CreateAlbumRequest
     // - 출력값 : CreateAlbumResponse
+    /**
+     * [앨범 상세 조회]
+     * 특정 앨범 ID를 기반으로 앨범 정보, 연결된 사진 목록(순서 정렬), 태그 목록, 
+     * 그리고 해당 앨범에 달린 달개(배지) 반응 목록을 종합하여 반환합니다.
+     */
     @Transactional
     public CreateAlbumResponse createAlbum(CreateAlbumRequest request) {
         validateRequest(request);
@@ -113,7 +118,11 @@ public class AlbumService {
     // [BACK][API]
     // - 어디서 호출? : AlbumController.getAlbumDetail()
     // - 입력값 : albumId
-    // - 출력값 : AlbumDetailResponse
+    // - 출력값 : AlbumDetailResponse.
+    /**
+     * [앨범 사진 정보 변환]
+     * DB 엔티티인 AlbumPhotoEntity를 프론트엔드 전달용 DTO인 AlbumDetailPhotoDto로 변환합니다.
+     */
     @Transactional(readOnly = true)
     public AlbumDetailResponse getAlbumDetail(Long albumId) {
         if (albumId == null) {
@@ -158,6 +167,11 @@ public class AlbumService {
     // - 어디서 호출? : getAlbumDetail()
     // - 입력값 : AlbumPhotoEntity
     // - 출력값 : AlbumDetailPhotoDto
+    /**
+     * [앨범 피드 목록 조회]
+     * 공개 범위(전체, 글벗, 나만 등)와 태그 필터링을 적용하여 최신순 앨범 목록을 가져옵니다.
+     * 현재 로그인한 사용자와의 관계(팔로우 등)를 확인하여 노출 여부를 결정합니다.
+     */
     private AlbumDetailPhotoDto toAlbumDetailPhotoDto(AlbumPhotoEntity albumPhoto) {
         PhotoEntity photo = albumPhoto.getPhoto();
 
@@ -173,6 +187,11 @@ public class AlbumService {
     // - 어디서 호출? : AlbumController.getAlbumFeed()
     // - 입력값 : type(photo/text/all), friendsOnly, tag
     // - 출력값 : 피드 카드 목록
+    /**
+     * [앨범 피드 목록 조회]
+     * 공개 범위(전체, 글벗, 나만 등)와 태그 필터링을 적용하여 최신순 앨범 목록을 가져옵니다.
+     * 현재 로그인한 사용자와의 관계(팔로우 등)를 확인하여 노출 여부를 결정합니다.
+     */
     @Transactional(readOnly = true)
     public List<AlbumFeedItemResponse> getAlbumFeed(String type, String visibility, String tag,
             Authentication authentication) {
@@ -256,6 +275,10 @@ public class AlbumService {
     // - 어디서 호출? : getAlbumFeed()
     // - 입력값 : type
     // - 출력값 : 피드 타입 지원 여부
+    /**
+     * [피드 타입 검증]
+     * 현재 시스템에서 지원하는 피드 타입(사진형 등)인지 확인합니다.
+     */
     private boolean isSupportedFeedType(String type) {
         if (type == null || type.isBlank() || "all".equalsIgnoreCase(type)) {
             return true;
@@ -267,6 +290,10 @@ public class AlbumService {
     // - 어디서 호출? : getAlbumFeed()
     // - 입력값 : tag(검색어), tags(앨범 태그 목록)
     // - 출력값 : 태그 필터 통과 여부
+    /**
+     * [태그 검색 필터링]
+     * 사용자가 입력한 검색어가 앨범에 포함된 태그 목록 중에 존재하는지 대소문자 구분 없이 확인합니다.
+     */
     private boolean matchesTagFilter(String tag, List<String> tags) {
         if (tag == null || tag.isBlank()) {
             return true;
@@ -280,6 +307,10 @@ public class AlbumService {
     // - 어디서 호출? : AlbumController.getLayoutTypes()
     // - 입력값 : 없음
     // - 출력값 : DB에 등록된 레이아웃 코드 문자열 목록
+    /**
+     * [사용 가능한 레이아웃 조회]
+     * DB 메타데이터를 조회하여 현재 선택 가능한 앨범 레이아웃 코드 목록을 반환합니다.
+     */
     public List<String> getAvailableLayoutTypes() {
         return loadLayoutTypeCodesFromDb();
     }
@@ -288,6 +319,10 @@ public class AlbumService {
     // - 어디서 호출? : createAlbum()
     // - 입력값 : album, photoIds, slotIndexes
     // - 출력값 : 없음(ALBUM_PHOTO 저장)
+    /**
+     * [앨범-사진 연결 저장]
+     * 앨범 생성 시 전달받은 사진 ID들을 해당 앨범과 연결하고, 지정된 슬롯 인덱스(순서)를 부여하여 저장합니다.
+     */
     private void saveAlbumPhotos(AlbumEntity album, List<Long> photoIds, List<Integer> slotIndexes) {
         List<PhotoEntity> photos = photoRepository.findAllById(photoIds);
         if (photos.size() != photoIds.size()) {
@@ -321,6 +356,10 @@ public class AlbumService {
     // - 어디서 호출? : createAlbum()
     // - 입력값 : album, tags
     // - 출력값 : 없음(TAGS/ALBUM_TAGS 저장)
+    /**
+     * [앨범-태그 연결 저장]
+     * 입력된 태그 문자열들을 정규화(공백 제거 등)한 후, 기존 태그는 사용 횟수를 올리고 신규 태그는 생성하여 앨범과 연결합니다.
+     */
     private void saveAlbumTags(AlbumEntity album, List<String> tags) {
         if (tags == null || tags.isEmpty()) {
             return;
@@ -342,6 +381,10 @@ public class AlbumService {
     // - 어디서 호출? : saveAlbumTags()
     // - 입력값 : tagName
     // - 출력값 : 저장/갱신된 Tag 엔티티
+    /**
+     * [태그 조회 및 생성]
+     * DB에서 태그를 검색하고, 없으면 새로 생성합니다. 기존 태그가 있다면 사용 횟수(UsageCount)를 1 증가시킵니다.
+     */
     private Tag findOrCreateTag(String tagName) {
         Tag existing = findTagByNameFlexible(tagName);
         if (existing != null) {
@@ -364,6 +407,10 @@ public class AlbumService {
     // - 어디서 호출? : findOrCreateTag(), insertTagRowByJdbc()
     // - 입력값 : 태그명
     // - 출력값 : Tag 엔티티 또는 null
+    /**
+     * [태그 유연 검색]
+     * 정확한 이름 매칭뿐만 아니라, 공백이나 대소문자가 다른 경우에도 동일한 태그로 간주하여 검색합니다.
+     */
     private Tag findTagByNameFlexible(String tagName) {
         Tag exact = tagRepository.findByName(tagName).orElse(null);
         if (exact != null) {
@@ -390,6 +437,10 @@ public class AlbumService {
     // - 어디서 호출? : findOrCreateTag()
     // - 입력값 : 신규 태그명
     // - 출력값 : 없음(TAGS 테이블 insert)
+    /**
+     * [신규 태그 직접 삽입]
+     * JDBC를 사용하여 태그 테이블에 새로운 레코드를 직접 삽입합니다. (ID 자동 생성 충돌 방지용)
+     */
     private void insertTagRowByJdbc(String tagName) {
         try {
             jdbcTemplate.update("INSERT INTO TAGS (TAG_NAME, USAGE_COUNT) VALUES (?, ?)", tagName, 1);
@@ -407,6 +458,10 @@ public class AlbumService {
     // - 어디서 호출? : saveAlbumTags()
     // - 입력값 : albumId, tagId
     // - 출력값 : 없음(ALBUM_TAGS insert)
+    /**
+     * [앨범-태그 매핑 삽입]
+     * 특정 앨범과 태그의 연결 정보를 ALBUM_TAGS 테이블에 저장합니다. 중복 연결을 방지하는 로직이 포함되어 있습니다.
+     */
     private void linkAlbumAndTagByJdbc(Long albumId, Long tagId) {
         if (albumTagExists(albumId, tagId)) {
             return;
@@ -433,6 +488,10 @@ public class AlbumService {
     // - 어디서 호출? : linkAlbumAndTagByJdbc()
     // - 입력값 : albumId, tagId
     // - 출력값 : 연결 존재 여부
+    /**
+     * [앨범-태그 연결 여부 확인]
+     * 이미 특정 앨범에 해당 태그가 연결되어 있는지 DB에서 확인합니다.
+     */
     private boolean albumTagExists(Long albumId, Long tagId) {
         Integer count = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM ALBUM_TAGS WHERE ALBUM_ID = ? AND TAG_ID = ?",
@@ -446,6 +505,10 @@ public class AlbumService {
     // - 어디서 호출? : linkAlbumAndTagByJdbc()
     // - 입력값 : 없음
     // - 출력값 : 신규 ALBUM_TAG_ID
+    /**
+     * [매핑 ID 생성]
+     * ALBUM_TAGS 테이블의 다음 PK 값을 수동으로 계산하여 가져옵니다.
+     */
     private Long getNextAlbumTagId() {
         Long next = jdbcTemplate.queryForObject("SELECT NVL(MAX(ALBUM_TAG_ID), 0) + 1 FROM ALBUM_TAGS", Long.class);
         if (next == null) {
@@ -458,6 +521,10 @@ public class AlbumService {
     // - 어디서 호출? : createAlbum() 시작 시점
     // - 입력값 : CreateAlbumRequest
     // - 출력값 : 없음(검증 실패 시 IllegalArgumentException)
+    /**
+     * [앨범 생성 요청 검증]
+     * 필수 파라미터(제목, 날짜, 공개범위, 사진 등)가 유효한지 검사합니다.
+     */
     private void validateRequest(CreateAlbumRequest request) {
         if (request.getUserId() == null) {
             throw new IllegalArgumentException("userId는 필수입니다.");
@@ -489,6 +556,10 @@ public class AlbumService {
     // - 어디서 호출? : normalizeLayoutType(), getAvailableLayoutTypes()
     // - 입력값 : 없음
     // - 출력값 : FK_ALBUM_LAYOUT_TYPE의 부모 테이블에 등록된 코드 목록
+    /**
+     * [레이아웃 코드 목록 조회]
+     * DB의 제약 조건 정보를 런타임에 조회하여 실제 유효한 레이아웃 테이블의 코드들을 가져옵니다.
+     */
     private List<String> loadLayoutTypeCodesFromDb() {
         try {
             String parentTableSql = """
@@ -529,6 +600,10 @@ public class AlbumService {
     // - 어디서 호출? : createAlbum()
     // - 입력값 : 요청의 layoutType 문자열
     // - 출력값 : DB FK를 만족하는 실제 코드값
+    /**
+     * [레이아웃 타입 정규화]
+     * 프론트엔드에서 보낸 별칭(single, grid 등)을 DB 제약 조건에 맞는 실제 코드값으로 변환합니다.
+     */
     private String normalizeLayoutType(String requestedLayoutType) {
         List<String> dbCodes = loadLayoutTypeCodesFromDb();
         if (dbCodes.isEmpty()) {
@@ -565,6 +640,10 @@ public class AlbumService {
     // - 어디서 호출? : AlbumController.updateAlbum()
     // - 입력값 : albumId, title, bodyText, visibility, authentication
     // - 출력값 : AlbumDetailResponse (수정된 앨범 상세)
+    /**
+     * [앨범 정보 수정]
+     * 작성자 본인 여부를 확인한 후 제목, 본문, 공개 범위를 업데이트합니다.
+     */
     @Transactional
     public AlbumDetailResponse updateAlbum(Long albumId, String title, String bodyText, String visibility,
             Authentication authentication) {
@@ -594,6 +673,10 @@ public class AlbumService {
     // - 어디서 호출? : AlbumController.deleteAlbum()
     // - 입력값 : albumId, authentication
     // - 출력값 : 없음 (삭제 처리)
+    /**
+     * [앨범 삭제]
+     * 본인 확인 후, 외래 키(FK) 관계를 고려하여 배지, 태그 연결, 사진 연결을 먼저 삭제한 뒤 앨범 데이터를 삭제합니다.
+     */
     @Transactional
     public void deleteAlbum(Long albumId, Authentication authentication) {
         AlbumEntity album = albumRepository.findById(albumId)
@@ -611,7 +694,10 @@ public class AlbumService {
         albumRepository.delete(album);
     }
 
-    // 글벗의 최신 게시글 조회
+    /**
+     * [최신 글벗 게시글 조회]
+     * 내가 팔로우하는 사람들의 글 중 가장 최근에 작성된 앨범 하나를 조회합니다.
+     */
     public LatestFrinendAlbumDto getLatestFriendStory(Long myId, Boolean friendsOnly, String tag) {
         // [BACK] 현재 앨범 피드는 사진형(photo)만 지원합니다.
         if (!isSupportedFeedType("photo")) {
