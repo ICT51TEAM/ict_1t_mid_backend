@@ -88,7 +88,7 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
     @Query("SELECT u FROM UserEntity u WHERE LOWER(u.username) LIKE LOWER(CONCAT('%', :keyword, '%')) AND (u.visibility IS NULL OR u.visibility <> 'PRIVATE')")
     List<UserEntity> searchByUsernameIgnoreCaseExcludePrivate(@Param("keyword") String keyword);
 
- // 유저의 설정 삭제
+    // 유저의 설정 삭제
     @Modifying
     @Query("DELETE FROM UserSettingsEntity s WHERE s.user.id = :userId")
     void deleteSettingsByUserId(@Param("userId") Long userId);
@@ -139,5 +139,10 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
     @Modifying
     @Query(value = "DELETE FROM USERS WHERE USER_ID = :userId", nativeQuery = true)
     void deleteByUserId(@Param("userId") Long userId);
+
+    // QnA 댓글 삭제(타인이 작성한 댓글)
+    @Modifying
+    @Query(value = "DELETE FROM QNA_COMMENTS WHERE ALBUM_ID IN (SELECT ALBUM_ID FROM QNA_POSTS WHERE USER_ID = :userId)", nativeQuery = true)
+    void deleteCommentsOnMyAlbumByUserId(Long uid);
 
 }

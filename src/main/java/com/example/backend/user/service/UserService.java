@@ -251,11 +251,22 @@ public class UserService {
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
         // 카카오 로그인 유저는 비밀번호가 없거나 설정된 비밀번호가 다를 수 있기 때문에 다르게 처리
         if (!"KAKAO".equalsIgnoreCase(user.getProvider())) {
+        	// [로그 추가]
+            System.out.println("=== 비밀번호 검증 시작 ===");
+            System.out.println("1. 프론트에서 넘어온 평문 비번: [" + password + "]");
+            System.out.println("2. DB에 저장된 암호문 비번: [" + user.getPassword() + "]");
+            
+            boolean isMatch = passwordEncoder.matches(password, user.getPassword());
+            System.out.println("3. 결과: " + (isMatch ? "일치" : "불일치"));
+            System.out.println("========================");
+        	
+        	
             // 입력한 비밀번호와 DB에 암호화되어 저장된 비밀번호가 일치하는지 검증
             if (!passwordEncoder.matches(password, user.getPassword())) {
                 throw new IllegalArgumentException("비밀번호가 일치하지 않습니다");
             }
         }
+        
 
         // ── [현재 방식] JPA 레포지토리 + try-catch ─────────────────────────────────
         // ※ 주의: @Transactional 안에서 JPA 예외 발생 시 Hibernate 세션이 깨질 수 있음
@@ -267,6 +278,8 @@ public class UserService {
         // NOTIFICATION, PASSWORD_RESET_TOKEN, PHOTO, QNA_COMMENTS, QNA_POSTS,
         // TAGS, USER_SETTINGS, USERS, VISIBILITY_CODE
         Long uid = user.getId();
+        
+        
 
         // 1. 친구 관계 삭제
         try {
@@ -323,6 +336,14 @@ public class UserService {
             userRepository.deleteQnaCommentsByUserId(uid);
         } catch (Exception e) {
             System.out.println("QnA 댓글 삭제 스킵: " + e.getMessage());
+        }
+        
+        // 8.1 [NEW] 내 게시글물에 달린 모든 댓글 삭제 (타인이 쓴 댓글 포함)
+        // 이 과정이 없으면 Step 9에서 내 게시물을 지울 때 ORA-02292가 발생합니다.
+        try {
+        	userRepository.deleteCommentsOnMyAlbumByUserId(uid);
+        } catch (Exception e) {
+        	System.out.println("내 게시물의 댓글들 삭제 스킵: " + e.getMessage());
         }
 
         // 9. QnA 게시글 삭제

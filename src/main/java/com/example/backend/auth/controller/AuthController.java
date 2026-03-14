@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.net.http.HttpHeaders;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -120,6 +121,8 @@ public class AuthController implements AuthControllerDocs {
 		    		.header("Set-Cookie", refreshTokenCookie.toString()) // 쿠키 설정
 		    		.header("Authorization", "Bearer " + accessToken) // 액세스 토큰 헤더
 		    		.body(responseBody);
+		    
+		    
 	    } else {
 	        // 5. 로그인 실패: 401 Unauthorized 반환
 	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("이메일 또는 비밀번호가 일치하지 않습니다.");
@@ -219,12 +222,12 @@ public class AuthController implements AuthControllerDocs {
 
 	    // 4. Refresh Token을 HttpOnly 쿠키로 설정
 	    ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", refreshToken)
-	            .httpOnly(true)
-	            .secure(false) // HTTPS 환경에서는 true로 변경 필요
-	            .path("/")
-	            .maxAge(7 * 24 * 60 * 60) // 7일
-	            .sameSite("Lax")
-	            .build();
+                .httpOnly(true)
+                .secure(false) // 배포 시(HTTPS) true로 변경 권장
+                .path("/")
+                .maxAge(7 * 24 * 60 * 60)
+                .sameSite("Lax")
+                .build();
 
 	    // 5. 프론트엔드 전달용 UserProfileDto 생성
 	    UserProfileDto userProfileDto = UserProfileDto.builder()
