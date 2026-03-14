@@ -26,11 +26,16 @@ import com.example.backend.user.entity.UserEntity; //(본인의 User 엔티티 �
 
 import jakarta.mail.Session;
 
+import com.example.backend.auth.entity.RefreshToken;
+import com.example.backend.auth.repository.RefreshTokenRepository;
 import com.example.backend.auth.service.KakaoService;
+
+import org.springframework.http.ResponseCookie;
 
 import lombok.RequiredArgsConstructor;
 
 import java.net.URLEncoder;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +48,7 @@ public class SecurityConfig {
     private final ClientRegistrationRepository clientRegistrationRepository;
     private final JwtUtil jwtUtil;
     private final KakaoService kakaoService;
+    private final RefreshTokenRepository refreshTokenRepository;
 
     // 수동 생성자는 삭제하거나 모든 필드를 포함해야 합니다.
     // @RequiredArgsConstructor가 있으므로 아래 생성자는 지우셔도 됩니다.
@@ -133,11 +139,30 @@ public class SecurityConfig {
                 String accessToken = jwtUtil.createToken(user.getId(), user.getEmail());
                 String refreshToken = jwtUtil.createRefreshToken(user.getId(), user.getEmail());
 
-                // 4. 프론트엔드 콜백 URL로 리다이렉트
+                // 4. Refresh Token DB 저장
+                refreshTokenRepository.findByUserId(user.getId())
+                        .ifPresentOrElse(
+                            existingToken -> existingToken.update(refreshToken, LocalDateTime.now().plusDays(7)),
+                            () -> {
+                                RefreshToken newRefreshToken = new RefreshToken(user, refreshToken, LocalDateTime.now().plusDays(7));
+                                refreshTokenRepository.save(newRefreshToken);
+                            }
+                        );
+
+                // 5. Refresh Token을 HttpOnly 쿠키로 설정
+                ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", refreshToken)
+                        .httpOnly(true)
+                        .secure(false)
+                        .path("/")
+                        .maxAge(7 * 24 * 60 * 60)
+                        .sameSite("Lax")
+                        .build();
+                response.addHeader("Set-Cookie", refreshTokenCookie.toString());
+
+                // 6. 프론트엔드 콜백 URL로 리다이렉트 (refreshToken은 쿠키로 전달)
                 UriComponentsBuilder uriBuilder = UriComponentsBuilder
                         .fromUriString("http://localhost:5173/auth/kakao/callback")
                         .queryParam("accessToken", accessToken)
-                        .queryParam("refreshToken", refreshToken)
                         .queryParam("isNewUser", isNewUser); // 신규 가입 여부 전달
 
                 if (isNewUser) {
