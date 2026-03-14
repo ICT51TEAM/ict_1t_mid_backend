@@ -235,7 +235,9 @@ public class AlbumService {
                     continue;
 
             } else {
-                // 전체: 다른 사람 글은 PUBLIC만, 본인 글은 공개범위와 무관하게 포함
+                // 전체: PUBLIC만 표시 (본인 글 포함). 나만보기(PRIVATE)는 나만 탭에서만.
+                if ("PRIVATE".equalsIgnoreCase(vis))
+                    continue;
                 if (!"PUBLIC".equalsIgnoreCase(vis) && !isOwner)
                     continue;
             }
