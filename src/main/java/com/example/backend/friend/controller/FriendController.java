@@ -113,9 +113,13 @@ public class FriendController implements FriendControllerDocs {
             @PathVariable Long friendshipId) {
     	Long userId = getUserIdFromToken(authentication);
         if (userId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        
-        friendService.acceptRequest(friendshipId, userId);
-        return ResponseEntity.ok("친구 요청을 수락했습니다");
+
+        try {
+            friendService.acceptRequest(friendshipId, userId);
+            return ResponseEntity.ok("친구 요청을 수락했습니다");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     // 5. 특정된 친구 요청 거절 처리
@@ -125,9 +129,13 @@ public class FriendController implements FriendControllerDocs {
             @PathVariable Long friendshipId) {
     	Long userId = getUserIdFromToken(authentication);
         if (userId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        
-        friendService.rejectRequest(friendshipId, userId);
-        return ResponseEntity.ok("친구 요청을 거절했습니다");
+
+        try {
+            friendService.rejectRequest(friendshipId, userId);
+            return ResponseEntity.ok("친구 요청을 거절했습니다");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     // 6. DELETE /api/friends/{friendId} : 이미 등록된 친구 삭제
@@ -137,9 +145,13 @@ public class FriendController implements FriendControllerDocs {
             Authentication authentication) {
     	Long userId = getUserIdFromToken(authentication);
         if (userId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        
-        friendService.removeFriend(friendId, userId);
-        return ResponseEntity.ok("친구 관계를 삭제했습니다");
+
+        try {
+            friendService.removeFriend(friendId, userId);
+            return ResponseEntity.ok("친구 관계를 삭제했습니다");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     // 7. GET /api/friends/search?q={검색어} : 특정 닉네임 유저 검색
