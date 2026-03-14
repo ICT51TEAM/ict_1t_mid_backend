@@ -252,9 +252,12 @@ public class AlbumService {
             if (!matchesTagFilter(tag, tags))
                 continue;
 
-            String coverImageUrl = albumPhotoRepository.findFirstByAlbum_IdOrderBySlotIndexAsc(album.getId())
-                    .map(link -> link.getPhoto() == null ? null : link.getPhoto().getPhotoUrl())
-                    .orElse(null);
+            List<AlbumDetailPhotoDto> feedPhotos = albumPhotoRepository.findByAlbum_IdOrderBySlotIndexAsc(album.getId())
+                    .stream()
+                    .map(this::toAlbumDetailPhotoDto)
+                    .collect(Collectors.toList());
+
+            String coverImageUrl = feedPhotos.isEmpty() ? null : feedPhotos.get(0).getPhotoUrl();
 
             result.add(AlbumFeedItemResponse.builder()
                     .id(album.getId())
@@ -268,6 +271,8 @@ public class AlbumService {
                     .tags(tags)
                     .badges(List.of())
                     .date(album.getRecordDate() == null ? "" : album.getRecordDate().toString())
+                    .layoutType(album.getLayoutType())
+                    .photos(feedPhotos)
                     .build());
         }
 
@@ -620,12 +625,25 @@ public class AlbumService {
             }
         }
 
-        // 2) 프론트 별칭 -> 후보 코드 매핑
+        // 2) 하이픈 → 언더스코어 변환 시도 (left-one-right-two → LEFT_ONE_RIGHT_TWO)
+        String underscored = requestedLayoutType.replace("-", "_").toUpperCase();
+        for (String code : dbCodes) {
+            if (code.equalsIgnoreCase(underscored)) {
+                return code;
+            }
+        }
+
+        // 3) 프론트 별칭 -> DB 코드 매핑
         Map<String, List<String>> aliasCandidates = Map.of(
-                "single", List.of("SINGLE", "1", "GRID_2", "GRID_4"),
-                "horizontal-two", List.of("GRID_2", "SINGLE", "1"),
-                "vertical-two", List.of("GRID_2", "SINGLE", "1"),
-                "grid", List.of("GRID_4", "GRID_2", "SINGLE", "1"));
+                "single", List.of("SINGLE"),
+                "horizontal-two", List.of("HORIZONTAL_TWO", "GRID_2"),
+                "vertical-two", List.of("VERTICAL_TWO", "GRID_3"),
+                "grid", List.of("GRID_4"),
+                "left-one-right-two", List.of("LEFT_ONE_RIGHT_TWO"),
+                "top-one-bottom-two", List.of("TOP_ONE_BOTTOM_TWO"),
+                "three-column", List.of("THREE_COLUMN"),
+                "top-one-bottom-three", List.of("TOP_ONE_BOTTOM_THREE"),
+                "left-one-right-three", List.of("LEFT_ONE_RIGHT_THREE"));
 
         List<String> candidates = aliasCandidates.getOrDefault(requestedLayoutType.toLowerCase(), List.of());
         for (String candidate : candidates) {

@@ -59,4 +59,10 @@ public class AlbumFeedItemResponse {
 
     // [응답] 화면 표시용 날짜 문자열
     private String date;
+
+    // [응답] 레이아웃 타입 (피드 카드 다중 사진 표시용)
+    private String layoutType;
+
+    // [응답] 사진 목록 (피드 카드 다중 사진 표시용)
+    private List<AlbumDetailPhotoDto> photos;
 }
