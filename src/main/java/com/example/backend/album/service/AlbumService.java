@@ -681,16 +681,16 @@ public class AlbumService {
 
         albumRepository.save(album);
 
-        // 사진 연결 업데이트: 벌크 DELETE로 즉시 SQL 실행 후 새로 저장
+        // 사진 연결 업데이트: JdbcTemplate으로 즉시 DELETE 후 새로 저장
         if (body.getPhotoIds() != null && !body.getPhotoIds().isEmpty()) {
-            albumPhotoRepository.bulkDeleteByAlbumId(albumId);
+            jdbcTemplate.update("DELETE FROM ALBUM_PHOTO WHERE ALBUM_ID = ?", albumId);
+            albumPhotoRepository.flush();
             saveAlbumPhotos(album, body.getPhotoIds(), body.getSlotIndexes());
         }
 
-        // 태그 업데이트: 기존 태그 연결 삭제 후 새로 저장
+        // 태그 업데이트: JdbcTemplate으로 즉시 DELETE 후 새로 저장
         if (body.getTags() != null) {
-            albumTagRepository.deleteByAlbum_Id(albumId);
-            albumTagRepository.flush();
+            jdbcTemplate.update("DELETE FROM ALBUM_TAGS WHERE ALBUM_ID = ?", albumId);
             saveAlbumTags(album, body.getTags());
         }
 
