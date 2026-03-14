@@ -681,15 +681,16 @@ public class AlbumService {
 
         albumRepository.save(album);
 
-        // 사진 연결 업데이트: 기존 연결 삭제 후 새로 저장
+        // 사진 연결 업데이트: 벌크 DELETE로 즉시 SQL 실행 후 새로 저장
         if (body.getPhotoIds() != null && !body.getPhotoIds().isEmpty()) {
-            albumPhotoRepository.deleteByAlbum_Id(albumId);
+            albumPhotoRepository.bulkDeleteByAlbumId(albumId);
             saveAlbumPhotos(album, body.getPhotoIds(), body.getSlotIndexes());
         }
 
         // 태그 업데이트: 기존 태그 연결 삭제 후 새로 저장
         if (body.getTags() != null) {
             albumTagRepository.deleteByAlbum_Id(albumId);
+            albumTagRepository.flush();
             saveAlbumTags(album, body.getTags());
         }
 

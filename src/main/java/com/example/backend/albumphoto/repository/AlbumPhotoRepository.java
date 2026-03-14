@@ -4,6 +4,9 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.example.backend.albumphoto.entity.AlbumPhotoEntity;
 
@@ -31,8 +34,13 @@ public interface AlbumPhotoRepository extends JpaRepository<AlbumPhotoEntity, Lo
     Optional<AlbumPhotoEntity> findFirstByAlbum_IdOrderBySlotIndexAsc(Long albumId);
 
     // [DB 삭제]
-    // - 어디서 호출? : AlbumService.deleteAlbum()
+    // - 어디서 호출? : AlbumService.deleteAlbum(), AlbumService.updateAlbum()
     // - 입력값 : albumId
     // - 출력값 : 없음(해당 앨범의 사진 연결 데이터 삭제)
     void deleteByAlbum_Id(Long albumId);
+
+    // [DB 벌크 삭제] - JPQL 벌크 DELETE (즉시 SQL 실행, Hibernate flush 순서 영향 없음)
+    @Modifying
+    @Query("DELETE FROM AlbumPhotoEntity ap WHERE ap.album.id = :albumId")
+    void bulkDeleteByAlbumId(@Param("albumId") Long albumId);
 }
