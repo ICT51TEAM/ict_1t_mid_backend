@@ -676,7 +676,7 @@ public class AlbumService {
             album.setRecordDate(java.time.LocalDate.parse(body.getRecordDate()));
         }
         if (body.getLayoutType() != null && !body.getLayoutType().isBlank()) {
-            album.setLayoutType(body.getLayoutType());
+            album.setLayoutType(normalizeLayoutType(body.getLayoutType()));
         }
 
         albumRepository.save(album);
