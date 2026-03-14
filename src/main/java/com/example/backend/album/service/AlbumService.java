@@ -252,9 +252,12 @@ public class AlbumService {
             if (!matchesTagFilter(tag, tags))
                 continue;
 
-            String coverImageUrl = albumPhotoRepository.findFirstByAlbum_IdOrderBySlotIndexAsc(album.getId())
-                    .map(link -> link.getPhoto() == null ? null : link.getPhoto().getPhotoUrl())
-                    .orElse(null);
+            List<AlbumDetailPhotoDto> feedPhotos = albumPhotoRepository.findByAlbum_IdOrderBySlotIndexAsc(album.getId())
+                    .stream()
+                    .map(this::toAlbumDetailPhotoDto)
+                    .collect(Collectors.toList());
+
+            String coverImageUrl = feedPhotos.isEmpty() ? null : feedPhotos.get(0).getPhotoUrl();
 
             result.add(AlbumFeedItemResponse.builder()
                     .id(album.getId())
@@ -268,6 +271,8 @@ public class AlbumService {
                     .tags(tags)
                     .badges(List.of())
                     .date(album.getRecordDate() == null ? "" : album.getRecordDate().toString())
+                    .layoutType(album.getLayoutType())
+                    .photos(feedPhotos)
                     .build());
         }
 
