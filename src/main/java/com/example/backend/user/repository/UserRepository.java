@@ -93,29 +93,30 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
     @Transactional
     @Query(value = """
         BEGIN
-            -- 1. 친구 관계 (컬럼명 확인 필요: 보통 follower/following 또는 user_id/friend_id)
-            DELETE FROM FRIENDSHIPS WHERE USER_ID = :uid OR FRIEND_ID = :uid; 
-            
-            -- 2. 알림 (테이블명이 NOTIFICATIONS 인지 확인)
+            -- 1. 친구 관계
+            DELETE FROM FRIENDSHIPS WHERE REQUESTER_ID = :uid OR ACCEPTER_ID = :uid;
+
+            -- 2. 알림
             DELETE FROM NOTIFICATION WHERE USER_ID = :uid;
-            
+
             -- 3. 토큰 및 설정
-            DELETE FROM REFRESH_TOKEN WHERE USER_ID = :uid;
+            DELETE FROM EMAIL_VERIFICATION_TOKEN WHERE EMAIL = (SELECT EMAIL FROM USERS WHERE USER_ID = :uid);
+            DELETE FROM REFRESH_TOKENS WHERE USER_ID = :uid;
             DELETE FROM PASSWORD_RESET_TOKEN WHERE USER_ID = :uid;
             DELETE FROM USER_SETTINGS WHERE USER_ID = :uid;
-            
-            -- 4. 앨범 하위 데이터
+
+            -- 4. 뱃지 (앨범 FK 참조하므로 앨범보다 먼저 삭제)
+            DELETE FROM BADGES WHERE USER_ID = :uid;
+
+            -- 5. 앨범 하위 데이터
             DELETE FROM ALBUM_DALGAE WHERE ALBUM_ID IN (SELECT ALBUM_ID FROM ALBUM WHERE USER_ID = :uid);
             DELETE FROM ALBUM_PHOTO WHERE ALBUM_ID IN (SELECT ALBUM_ID FROM ALBUM WHERE USER_ID = :uid);
             DELETE FROM ALBUM_TAGS WHERE ALBUM_ID IN (SELECT ALBUM_ID FROM ALBUM WHERE USER_ID = :uid);
-            
-            -- 5. QnA 및 댓글 (테이블명 QNA_COMMENT 인지 QNA_COMMENTS 인지 확인)
+
+            -- 6. QnA 및 댓글
             DELETE FROM QNA_COMMENTS WHERE USER_ID = :uid OR POST_ID IN (SELECT POST_ID FROM QNA_POSTS WHERE USER_ID = :uid);
             DELETE FROM QNA_POSTS WHERE USER_ID = :uid;
-            
-            -- 6. 뱃지 (GIVEN_USER_ID 컬럼명이 맞는지 확인)
-            DELETE FROM BADGES WHERE USER_ID = :uid OR GIVEN_USER_ID = :uid;
-            
+
             -- 7. 부모 데이터 삭제
             DELETE FROM ALBUM WHERE USER_ID = :uid;
             DELETE FROM PHOTO WHERE USER_ID = :uid;
