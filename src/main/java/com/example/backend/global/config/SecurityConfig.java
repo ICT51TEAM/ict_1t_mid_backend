@@ -192,7 +192,9 @@ public class SecurityConfig {
         config.setAllowedHeaders(Arrays.asList(
                 "Authorization", // JWT Bearer 토큰
                 "Content-Type", // application/json
-                "X-Requested-With")); // Ajax 요청 식별
+                "X-Requested-With", // Ajax 요청 식별
+                "Accept",
+                "Origin")); 
 
         config.setAllowCredentials(true);
 

@@ -34,14 +34,14 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
 
 		// 1. 헤더에서 토큰 추출
 		String authHeader = request.getHeader("Authorization");
-		String token = null;
+		String token = resolveTokenFromCookie(request);
 
 		log.info("=== 요청 URL: {}, Authorization 헤더: {}", request.getRequestURI(),
 				authHeader != null ? "있음(길이:" + authHeader.length() + ")" : "없음");
 
-		if (authHeader != null && authHeader.startsWith("Bearer ")) {
-			token = authHeader.substring(7);
-		}
+		//if (authHeader != null && authHeader.startsWith("Bearer ")) {
+		//	token = authHeader.substring(7);
+		//}
 
 		// 2. 추출된 토큰 유효성 검증
 		if (token != null) {
@@ -71,6 +71,18 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
 		// 6. 다음 필터 진행
 		filterChain.doFilter(request, response);
 	}/// doFilterInternal
+
+	private String resolveTokenFromCookie(HttpServletRequest request) {
+		jakarta.servlet.http.Cookie[] cookies = request.getCookies();
+		if(cookies != null) {
+			for (jakarta.servlet.http.Cookie cookie : cookies ) {
+				if("accessToken".equals(cookie.getName())) {
+					return cookie.getValue();
+				}
+			}
+		}
+		return null;
+	}
 
 	private void sendErrorResponse(HttpServletResponse response, String code, String message) throws IOException {
 		response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
