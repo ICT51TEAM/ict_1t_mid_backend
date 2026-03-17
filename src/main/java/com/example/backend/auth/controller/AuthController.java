@@ -103,22 +103,32 @@ public class AuthController implements AuthControllerDocs {
 	                    }
 	                );
 	        
-	        // 3. Refresh Token을 HttpOnly 쿠키로 설정
+	        // 3.1 Access Token을 HttpOnly 쿠키로 설정
+	        ResponseCookie accessTokenCookie = ResponseCookie.from("accessToken", accessToken)
+	                .httpOnly(true)
+	                .secure(false) // 배포 시(HTTPS) true로 변경 권장
+	                .path("/")
+	                .maxAge(30 * 60)  // 30분
+	                .sameSite("Lax")
+	                .build();
+	        
+	        // 3.2 Refresh Token을 HttpOnly 쿠키로 설정
 	        ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", refreshToken)
 	                .httpOnly(true)
 	                .secure(false) // 배포 시(HTTPS) true로 변경 권장
 	                .path("/")
-	                .maxAge(7 * 24 * 60 * 60)
+	                .maxAge(7 * 24 * 60 * 60) // 7일
 	                .sameSite("Lax")
 	                .build();
 
 	        // 4. 프론트엔드 전달용 데이터 구성
 	        Map<String, Object> responseBody = new HashMap<>();
-	        responseBody.put("accessToken", accessToken);
+	        //responseBody.put("accessToken", accessToken);
 	        responseBody.put("user", userProfile); // 이미 authService에서 빌더로 생성된 profile 활용 가능
 
 		    return ResponseEntity.ok()
-		    		.header("Set-Cookie", refreshTokenCookie.toString()) // 쿠키 설정
+		    		.header("Set-Cookie", accessTokenCookie.toString()) // accessTokenCookie쿠키 설정
+		    		.header("Set-Cookie", refreshTokenCookie.toString()) // refreshTokenCookie쿠키 설정
 		    		.header("Authorization", "Bearer " + accessToken) // 액세스 토큰 헤더
 		    		.body(responseBody);
 		    
@@ -157,24 +167,36 @@ public class AuthController implements AuthControllerDocs {
 	@PostMapping("/logout")
 	@Transactional
 	public ResponseEntity<?> logout(
-			@RequestHeader(value = "Authorization", required = false) String authHeader,
-			HttpServletResponse response) {
-		// 토큰 존재 여부 및 형식 체크
-		if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+			@CookieValue(value = "accessToken", required = false) String accessToken,
+	        HttpServletResponse response) {
+		// 토큰 존재 여부 및 형식 체크(변경)
+		//if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+		//	return ResponseEntity.badRequest()
+		//			.body(Map.of("error", "유효한 인증 헤더가 필요합니다."));
+		//}
+		if (accessToken == null) {
+	        return ResponseEntity.ok().body("이미 로그아웃 되었거나 세션이 없습니다.");
+	    }
 
-			return ResponseEntity.badRequest()
-					.body(Map.of("error", "유효한 인증 헤더가 필요합니다."));
-		}
-
-		String accessToken = authHeader.substring(7);
+		//String accessToken = authHeader.substring(7);
+		
 
 		// db에서 삭제(폐기)
 		try {
 			Long userId = jwtUtil.getUserIdFromToken(accessToken);
 			refreshTokenRepository.deleteByUserId(userId);
 			
+			// 브라우저의 액세스 토큰 삭제
+			ResponseCookie deleteAccess = ResponseCookie.from("accessToken","")
+						.httpOnly(true)
+						.secure(false)
+						.path("/")
+						.maxAge(0)
+						.sameSite("Lax")
+						.build();
+			
 			// 브라우저의 리프레쉬 토큰 삭제
-			ResponseCookie deleteCookie = ResponseCookie.from("refreshToken","")
+			ResponseCookie deleteRefresh = ResponseCookie.from("refreshToken","")
 					.httpOnly(true)
 					.secure(false)
 					.path("/")
@@ -183,7 +205,8 @@ public class AuthController implements AuthControllerDocs {
 					.build();
 			
 			return ResponseEntity.ok()
-					.header("Set-Cookie", deleteCookie.toString())
+					.header("Set-Cookie", deleteAccess.toString())
+					.header("Set-Cookie", deleteRefresh.toString())
 					.body("로그아웃 되었습니다.");
 
 		} catch (Exception e) {

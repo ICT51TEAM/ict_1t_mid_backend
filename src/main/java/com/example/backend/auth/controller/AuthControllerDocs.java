@@ -33,7 +33,7 @@ public interface AuthControllerDocs {
     ResponseEntity<Map<String, String>> signup(@Valid @RequestBody SignupRequestDto requestDto);
 
     @Operation(summary = "로그아웃", description = "현재 계정에서 로그아웃 처리합니다.")
-	public ResponseEntity<?> logout(@RequestHeader(value = "Authorization", required = false) String authHeader,HttpServletResponse response);
+    public ResponseEntity<?> logout(@CookieValue(value = "accessToken", required = false) String accessToken, HttpServletResponse response);
 
     @Operation(summary = "카카오 로그인", description = "카카오 계정으로 로그인합니다.", tags = { "1. 로그인 (최우선)" })
     ResponseEntity<?> kakaoLogin(@RequestBody KakaoLoginDto dto, HttpSession session);
