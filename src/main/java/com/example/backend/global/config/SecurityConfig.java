@@ -144,7 +144,17 @@ public class SecurityConfig {
                             }
                         );
 
-                // 5. Refresh Token을 HttpOnly 쿠키로 설정
+                // 5. Access Token을 HttpOnly 쿠키로 설정
+                ResponseCookie accessTokenCookie = ResponseCookie.from("accessToken", accessToken)
+                        .httpOnly(true)
+                        .secure(false)
+                        .path("/")
+                        .maxAge(30 * 60) // 30분
+                        .sameSite("Lax")
+                        .build();
+                response.addHeader("Set-Cookie", accessTokenCookie.toString());
+
+                // 6. Refresh Token을 HttpOnly 쿠키로 설정
                 ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", refreshToken)
                         .httpOnly(true)
                         .secure(false)
@@ -154,10 +164,9 @@ public class SecurityConfig {
                         .build();
                 response.addHeader("Set-Cookie", refreshTokenCookie.toString());
 
-                // 6. 프론트엔드 콜백 URL로 리다이렉트 (refreshToken은 쿠키로 전달)
+                // 7. 프론트엔드 콜백 URL로 리다이렉트 (토큰은 HttpOnly 쿠키로 전달)
                 UriComponentsBuilder uriBuilder = UriComponentsBuilder
                         .fromUriString("http://localhost:5173/auth/kakao/callback")
-                        .queryParam("accessToken", accessToken)
                         .queryParam("isNewUser", isNewUser); // 신규 가입 여부 전달
 
                 if (isNewUser) {
