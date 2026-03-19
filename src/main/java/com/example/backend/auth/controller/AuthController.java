@@ -415,8 +415,17 @@ public class AuthController implements AuthControllerDocs {
 	        dbToken.update(newRefreshToken, LocalDateTime.now().plusDays(7));
 	        refreshTokenRepository.save(dbToken);
 
-	        // 7. 새 리프레시 토큰을 쿠키에 설정
-	        ResponseCookie newCookie = ResponseCookie.from("refreshToken", newRefreshToken)
+	        // 7. 새 액세스 토큰을 HttpOnly 쿠키에 설정
+	        ResponseCookie newAccessCookie = ResponseCookie.from("accessToken", newAccessToken)
+	                .httpOnly(true)
+	                .secure(false)
+	                .path("/")
+	                .maxAge(30 * 60) // 30분
+	                .sameSite("Lax")
+	                .build();
+
+	        // 8. 새 리프레시 토큰을 HttpOnly 쿠키에 설정
+	        ResponseCookie newRefreshCookie = ResponseCookie.from("refreshToken", newRefreshToken)
 	                .httpOnly(true)
 	                .secure(false)
 	                .path("/")
@@ -425,8 +434,9 @@ public class AuthController implements AuthControllerDocs {
 	                .build();
 
 	        return ResponseEntity.ok()
-	        		.header("Set-Cookie", newCookie.toString())
-	        		.body(Map.of("accessToken", newAccessToken));
+	        		.header("Set-Cookie", newAccessCookie.toString())
+	        		.header("Set-Cookie", newRefreshCookie.toString())
+	        		.body(Map.of("message", "토큰이 갱신되었습니다."));
 
 	    } catch (Exception e) {
 	    	return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
